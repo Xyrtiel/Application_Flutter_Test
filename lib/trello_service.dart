@@ -60,6 +60,11 @@ class TrelloService {
   }
 
   // --- Cards ---
+  
+    Future<List<dynamic>> getCards(String listId) async {
+    final url = Uri.parse("$baseUrl/lists/$listId/cards?key=$apiKey&token=$token&fields=all&closed=true");
+    return await _makeRequest(url);
+  }
 
   Future<Map<String, dynamic>> createCard(String listId, String name) async {
     final url = Uri.parse("$baseUrl/cards?key=$apiKey&token=$token");
@@ -67,6 +72,20 @@ class TrelloService {
     return await _makePostRequest(url, body);
   }
 
+     Future<void> updateCard(String cardId, String newName) async {
+    final url = Uri.parse("$baseUrl/cards/$cardId?key=$apiKey&token=$token");
+    final body = {"name": newName};
+    await _makePutRequest(url, body);
+  }
+
+    Future<void> deleteCard(String cardId) async {
+    final url = Uri.parse("$baseUrl/cards/$cardId?key=$apiKey&token=$token");
+    await _makeDeleteRequest(url);
+  }
+    Future<void> closeCard(String cardId) async {
+      final url = Uri.parse("$baseUrl/cards/$cardId?key=$apiKey&token=$token&closed=true");
+      await _makePutRequest(url, {});
+    }
   // --- General Request Methods ---
 
   Future<List<dynamic>> _makeRequest(Uri url) async {
