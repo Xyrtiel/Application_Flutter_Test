@@ -16,10 +16,16 @@ class _WrapperState extends State<Wrapper> {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
         if (snapshot.hasData) {
-          return const Homepage(); // Utilisateur connecté
+          print("Connected user : ${snapshot.data?.uid}");
+          return const Homepage();
         } else {
-          return const Login(); // Aucun utilisateur
+          print("No user connected");
+          return const Login();
         }
       },
     );

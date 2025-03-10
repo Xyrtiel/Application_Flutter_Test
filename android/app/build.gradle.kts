@@ -1,17 +1,16 @@
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
-    id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
+    id("com.google.gms.google-services") // FlutterFire Configuration
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id("dev.flutter.flutter-gradle-plugin")
+    id("dev.flutter.flutter-gradle-plugin") // Flutter plugin
 }
 
 android {
+    // Configuration NDK version correcte
+    ndkVersion = "27.0.12077973" // NDK version requise par certains plugins
+
     namespace = "com.example.flutter_application_test"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -23,25 +22,21 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.flutter_application_test"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        applicationId = "com.example.flutter_application_test" // Unique ID de l'application
+        minSdk = 23 // Minimum SDK requis
+        targetSdk = flutter.targetSdkVersion // Cible la version SDK de Flutter
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Configurer les clés de signature pour le build de production
             signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
 
 flutter {
-    source = "../.."
+    source = "../.." // Emplacement du projet Flutter
 }
