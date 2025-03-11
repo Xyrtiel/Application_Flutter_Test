@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'trello_service.dart';
+import 'member_modal.dart';
+import 'label_modal.dart';
 
 class CardDetailsModal extends StatefulWidget {
   final Map<String, dynamic> card;
   final TrelloService trelloService;
+  final String listId;
+  final String boardId; // Add the boardId parameter
 
-  const CardDetailsModal({Key? key, required this.card, required this.trelloService}) : super(key: key);
+  const CardDetailsModal({Key? key, required this.card, required this.trelloService, required this.listId, required this.boardId}) : super(key: key);
 
   @override
   State<CardDetailsModal> createState() => _CardDetailsModalState();
@@ -124,8 +128,35 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.person_add), tooltip: "Membres"),
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.label_outline), tooltip: "Etiquette"),
+                  IconButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => MemberModal(
+                          cardId: widget.card['id'],
+                          trelloService: widget.trelloService,
+                          boardId: widget.boardId, // Pass the boardId here!
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.person_add),
+                    tooltip: "Membres",
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => LabelModal(
+                          cardId: widget.card['id'],
+                          trelloService: widget.trelloService,
+                          listId: widget.listId, // Pass listId here
+                          boardId: widget.boardId, // Pass boardId here
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.label_outline),
+                    tooltip: "Etiquette",
+                  ),
                   IconButton(onPressed: () {}, icon: const Icon(Icons.checklist), tooltip: "Checklist"),
                   IconButton(onPressed: () {}, icon: const Icon(Icons.date_range), tooltip: "Dates"),
                   IconButton(onPressed: () {}, icon: const Icon(Icons.attach_file), tooltip: "Pièce Jointe"),

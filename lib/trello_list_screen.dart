@@ -63,10 +63,18 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
             TextButton(
               child: const Text("Create"),
               onPressed: () async {
-                await trelloService.createList(widget.boardId, _listNameController.text.trim());
-                _fetchLists();
-                _listNameController.clear();
-                if (context.mounted) Navigator.of(context).pop();
+                 final listName = _listNameController.text.trim();
+                if(listName.isNotEmpty){
+                  await trelloService.createList(widget.boardId, listName);
+                  _fetchLists();
+                  _listNameController.clear();
+                  if (context.mounted) Navigator.of(context).pop();
+                } else {
+                  if(context.mounted) Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('List name cannot be empty.'),
+                  ));
+                }
               },
             ),
           ],
@@ -84,8 +92,8 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
     }
   }
 
-  Future<void> _showUpdateListDialog(String listId) async {
-    _listNameController.text = "";
+  Future<void> _showUpdateListDialog(String listId, String currentName) async {
+     _listNameController.text = currentName;
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -106,10 +114,18 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
             TextButton(
               child: const Text("Update"),
               onPressed: () async {
-                await trelloService.updateList(listId, _listNameController.text);
-                _fetchLists();
-                _listNameController.clear();
-                if (context.mounted) Navigator.of(context).pop();
+                final listName = _listNameController.text.trim();
+                if(listName.isNotEmpty){
+                  await trelloService.updateList(listId, listName);
+                  _fetchLists();
+                  _listNameController.clear();
+                  if (context.mounted) Navigator.of(context).pop();
+                } else {
+                  if(context.mounted) Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('List name cannot be empty.'),
+                  ));
+                }
               },
             ),
           ],
@@ -275,6 +291,8 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                                         builder: (context) => CardDetailsModal(
                                           card: card,
                                           trelloService: trelloService,
+                                          listId: list['id'], // Pass the listId here
+                                          boardId: widget.boardId, // Pass the boardId here
                                         ),
                                       );
                                     },
@@ -340,7 +358,7 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                                       icon: const Icon(Icons.edit),
                                       color: Colors.blue[700],
                                       onPressed: () {
-                                        _showUpdateListDialog(list['id']);
+                                        _showUpdateListDialog(list['id'], list['name']);
                                       },
                                     ),
                                     IconButton(

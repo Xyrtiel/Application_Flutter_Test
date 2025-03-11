@@ -57,10 +57,18 @@ class _HomepageState extends State<Homepage> {
             TextButton(
               child: const Text("Create"),
               onPressed: () async {
-                await trelloService.createBoard(_boardNameController.text.trim(), null);
-                _fetchBoards(); // Refresh the list
-                _boardNameController.clear(); // Clear the text field
-                if (context.mounted) Navigator.of(context).pop(); // Close the dialog
+                final boardName = _boardNameController.text.trim();
+                if(boardName.isNotEmpty){
+                  await trelloService.createBoard(boardName, null);
+                  _fetchBoards(); // Refresh the list
+                  _boardNameController.clear(); // Clear the text field
+                  if (context.mounted) Navigator.of(context).pop(); // Close the dialog
+                } else {
+                  if(context.mounted) Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Board name cannot be empty.'),
+                  ));
+                }
               },
             ),
           ],
@@ -78,8 +86,8 @@ class _HomepageState extends State<Homepage> {
     }
   }
 
-  Future<void> _showUpdateBoardDialog(String boardId) async {
-    _boardNameController.text = ""; // Clear the text field
+  Future<void> _showUpdateBoardDialog(String boardId, String currentName) async {
+    _boardNameController.text = currentName;
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -100,10 +108,18 @@ class _HomepageState extends State<Homepage> {
             TextButton(
               child: const Text("Update"),
               onPressed: () async {
-                await trelloService.updateBoard(boardId, _boardNameController.text);
-                _fetchBoards(); // Refresh the list after update
-                _boardNameController.clear(); // Clear the text field
-                 if (context.mounted) Navigator.of(context).pop();
+                final boardName = _boardNameController.text.trim();
+                if(boardName.isNotEmpty){
+                  await trelloService.updateBoard(boardId, boardName);
+                  _fetchBoards(); // Refresh the list after update
+                  _boardNameController.clear(); // Clear the text field
+                  if (context.mounted) Navigator.of(context).pop();
+                } else {
+                  if(context.mounted) Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Board name cannot be empty.'),
+                  ));
+                }
               },
             ),
           ],
@@ -170,7 +186,7 @@ class _HomepageState extends State<Homepage> {
                                 IconButton(
                                   icon: const Icon(Icons.edit),
                                   onPressed: () {
-                                    _showUpdateBoardDialog(board['id']);
+                                    _showUpdateBoardDialog(board['id'], board['name']);
                                   },
                                 ),
                                 IconButton(
