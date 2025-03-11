@@ -63,15 +63,15 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
             TextButton(
               child: const Text("Create"),
               onPressed: () async {
-                 final listName = _listNameController.text.trim();
-                if(listName.isNotEmpty){
+                final listName = _listNameController.text.trim();
+                if (listName.isNotEmpty) {
                   await trelloService.createList(widget.boardId, listName);
                   _fetchLists();
                   _listNameController.clear();
                   if (context.mounted) Navigator.of(context).pop();
                 } else {
-                  if(context.mounted) Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  if (context.mounted) Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text('List name cannot be empty.'),
                   ));
                 }
@@ -93,7 +93,7 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
   }
 
   Future<void> _showUpdateListDialog(String listId, String currentName) async {
-     _listNameController.text = currentName;
+    _listNameController.text = currentName;
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -115,14 +115,14 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
               child: const Text("Update"),
               onPressed: () async {
                 final listName = _listNameController.text.trim();
-                if(listName.isNotEmpty){
+                if (listName.isNotEmpty) {
                   await trelloService.updateList(listId, listName);
                   _fetchLists();
                   _listNameController.clear();
                   if (context.mounted) Navigator.of(context).pop();
                 } else {
-                  if(context.mounted) Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  if (context.mounted) Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text('List name cannot be empty.'),
                   ));
                 }
@@ -156,9 +156,11 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
               child: const Text("Create"),
               onPressed: () async {
                 await trelloService.createCard(listId, _cardNameController.text.trim());
-                _fetchLists();
+                 _fetchLists();
                 _cardNameController.clear();
-                if (context.mounted) Navigator.of(context).pop();
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
               },
             ),
           ],
@@ -267,10 +269,11 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
                   } else if (snapshot.hasData) {
+                    final lists = snapshot.data!;
                     return ListView.builder(
-                      itemCount: snapshot.data!.length,
+                      itemCount: lists.length,
                       itemBuilder: (context, index) {
-                        final list = snapshot.data![index];
+                        final list = lists[index];
                         return FutureBuilder<List<dynamic>>(
                           future: trelloService.getCards(list['id']),
                           builder: (context, cardSnapshot) {
@@ -297,7 +300,7 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                                       );
                                     },
                                     title: Text(
-                                      card['name'],
+                                      card['name'] ?? "No name", // Add null check here
                                       style: TextStyle(
                                         decoration: isClosed ? TextDecoration.lineThrough : TextDecoration.none,
                                         color: isClosed ? Colors.grey : Colors.black,
@@ -343,7 +346,7 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                               ),
                               elevation: 4,
                               child: ExpansionTile(
-                                title: Text(list['name']),
+                                title: Text(list['name'] ?? "No name"), // Add null check here
                                 children: [
                                   Padding(
                                     padding: const EdgeInsets.all(8.0),

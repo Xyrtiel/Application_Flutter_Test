@@ -171,14 +171,15 @@ class _HomepageState extends State<Homepage> {
                       child: Text("Error getting boards: ${snapshot.error}", style: const TextStyle(color: Colors.red)),
                     );
                   } else if (snapshot.hasData) {
+                    final boards = snapshot.data!;
                     return ListView.builder(
-                      itemCount: snapshot.data!.length,
+                      itemCount: boards.length,
                       itemBuilder: (context, index) {
-                        final board = snapshot.data![index];
+                        final board = boards[index];
                         return Card(
                           margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           child: ListTile(
-                            title: Text(board['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                            title: Text(board['name'] ?? "No Name"), // Add null check here
                             subtitle: Text("ID: ${board['id']}"),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,

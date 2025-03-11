@@ -134,10 +134,51 @@ class TrelloService {
     await _makeDeleteRequest(url);
   }
 
-  Future<Map<String, dynamic>> createLabel(String boardId, String name, String color) async {
+  Future<void> createLabel(String boardId, String name, String color) async {
     final url = Uri.parse("$baseUrl/labels?key=$apiKey&token=$token");
-    final body = {"idBoard": boardId, "name": name, "color": color};
+    // Trello API uses specific color values (e.g., "green", "yellow", "orange", "red", "purple", "blue", "sky", "lime", "pink", "black")
+    final body = {"idBoard": boardId, "name": name, "color": color.toUpperCase()};
+    await _makePostRequest(url, body);
+  }
+
+  //--- Checklist ---
+  Future<List<dynamic>> getChecklists(String cardId) async {
+    final url = Uri.parse("$baseUrl/cards/$cardId/checklists?key=$apiKey&token=$token");
+    return await _makeRequest(url);
+  }
+
+    Future<Map<String, dynamic>> createChecklist(String cardId, String name) async {
+    final url = Uri.parse("$baseUrl/checklists?key=$apiKey&token=$token");
+    final body = {"name": name, "idCard": cardId};
     return await _makePostRequest(url, body);
+  }
+
+  Future<Map<String, dynamic>> addChecklistItem(String checklistId, String name, {bool checked = false}) async {
+     final url = Uri.parse("$baseUrl/checklists/$checklistId/checkItems?key=$apiKey&token=$token");
+     final body = {"name": name, "checked": checked};
+    return await _makePostRequest(url, body);
+  }
+
+  Future<void> updateChecklistItem(String checklistId, String checkItemId, {String? name, bool? checked}) async {
+    final url = Uri.parse("$baseUrl/checklists/$checklistId/checkItems/$checkItemId?key=$apiKey&token=$token");
+     final body = {};
+     if (name != null) {
+        body['name'] = name;
+    }
+    if (checked != null) {
+        body['state'] = checked ? 'complete' : 'incomplete';
+    }
+    await _makePutRequest(url, body);
+  }
+
+  Future<void> deleteChecklistItem(String checklistId, String checkItemId) async {
+      final url = Uri.parse("$baseUrl/checklists/$checklistId/checkItems/$checkItemId?key=$apiKey&token=$token");
+      await _makeDeleteRequest(url);
+  }
+
+  Future<void> deleteChecklist(String checklistId) async {
+      final url = Uri.parse("$baseUrl/checklists/$checklistId?key=$apiKey&token=$token");
+    await _makeDeleteRequest(url);
   }
 
   // --- General Request Methods ---
@@ -152,15 +193,19 @@ class TrelloService {
     }
   }
 
-  Future<Map<String, dynamic>> _makePostRequest(Uri url, Map<String, dynamic> body) async {
+  Future<dynamic> _makePostRequest(Uri url, Map<String, dynamic> body) async {
     final response = await http.post(
       url,
        headers: {'Content-Type': 'application/json'},
       body: jsonEncode(body),
     );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+     if (response.statusCode == 200) {
+      try{
+        return jsonDecode(response.body);
+      } catch (e){
+        return;
+      }
     } else {
       throw Exception("Error making POST request: ${response.statusCode} - ${response.body}");
     }

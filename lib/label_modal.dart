@@ -17,6 +17,7 @@ class _LabelModalState extends State<LabelModal> {
   late Future<List<dynamic>> _boardLabelsFuture;
   late List<dynamic> _cardLabels = [];
   final TextEditingController _labelNameController = TextEditingController();
+  String _selectedColor = 'green';
 
   @override
   void initState() {
@@ -49,9 +50,29 @@ class _LabelModalState extends State<LabelModal> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Create new label"),
-          content: TextField(
-            controller: _labelNameController,
-            decoration: const InputDecoration(hintText: "Enter label name"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _labelNameController,
+                decoration: const InputDecoration(hintText: "Enter label name"),
+              ),
+               DropdownButton<String>(
+                value: _selectedColor,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedColor = newValue!;
+                  });
+                },
+                items: <String>['green', 'yellow', 'orange', 'red', 'purple', 'blue', 'sky', 'lime', 'pink', 'black']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
           actions: <Widget>[
             TextButton(
@@ -65,8 +86,9 @@ class _LabelModalState extends State<LabelModal> {
               child: const Text("Create"),
               onPressed: () async {
                 final labelName = _labelNameController.text.trim();
-                if (labelName.isNotEmpty) { // Check if the name is not empty
-                  await widget.trelloService.createLabel(widget.boardId, labelName, "green");
+                if (labelName.isNotEmpty) {
+                  // Check if the name is not empty
+                  await widget.trelloService.createLabel(widget.boardId, labelName, _selectedColor);
                   setState(() {
                     _boardLabelsFuture = widget.trelloService.getBoardLabels(widget.boardId);
                   });
@@ -74,8 +96,8 @@ class _LabelModalState extends State<LabelModal> {
                   if (context.mounted) Navigator.of(context).pop();
                 } else {
                   // Handle the case where the name is empty (e.g., show an error message)
-                  if(context.mounted) Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  if (context.mounted) Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text('Label name cannot be empty.'),
                   ));
                 }
