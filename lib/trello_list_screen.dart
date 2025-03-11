@@ -1,7 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'secrets.dart';
 import 'trello_service.dart';
 
 class TrelloListScreen extends StatefulWidget {
@@ -20,6 +17,8 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
   final TextEditingController _listNameController = TextEditingController();
   final TextEditingController _cardNameController = TextEditingController();
   final Map<String, bool> _cardCompletionStatus = {};
+  final GlobalKey _updateCardDialogKey = GlobalKey();
+  final TextEditingController _cardNameControllerForDialog = TextEditingController();
 
   @override
   void initState() {
@@ -31,6 +30,7 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
   void dispose() {
     _listNameController.dispose();
     _cardNameController.dispose();
+    _cardNameControllerForDialog.dispose();
     super.dispose();
   }
 
@@ -150,6 +150,44 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
     );
   }
 
+  Future<void> _showUpdateCardDialog(String cardId, String currentName) async {
+    _cardNameControllerForDialog.text = currentName;
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          key: _updateCardDialogKey,
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text("Update Card Name"),
+              content: TextField(
+                controller: _cardNameControllerForDialog,
+                decoration: const InputDecoration(hintText: "Enter new card name"),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text("Cancel"),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: const Text("Update"),
+                  onPressed: () async {
+                    await _updateCard(cardId, _cardNameControllerForDialog.text);
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _updateCard(String cardId, String newName) async {
     try {
       await trelloService.updateCard(cardId, newName);
@@ -160,16 +198,16 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
   }
 
   Future<void> _deleteCard(String cardId) async {
-     try {
+    try {
       await trelloService.deleteCard(cardId);
-       _fetchLists();
+      _fetchLists();
     } catch (e) {
       print("Error deleting card: $e");
     }
   }
 
   Future<void> _toggleCardCompletion(String cardId) async {
-     setState(() {
+    setState(() {
       _cardCompletionStatus[cardId] = !(_cardCompletionStatus[cardId] ?? false);
     });
   }
@@ -177,14 +215,32 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.boardName)),
+      appBar: AppBar(
+        title: Text(widget.boardName),
+        backgroundColor: Colors.blue, // Your primary color
+        elevation: 4,
+      ),
+      backgroundColor: Colors.grey[200], // Background color
       body: RefreshIndicator(
+        color: Colors.blue, // Your primary color
         onRefresh: () async {
           _fetchLists();
         },
         child: Column(
           children: [
-            ElevatedButton(onPressed: _createList, child: const Text("Create new list")),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ElevatedButton(
+                  onPressed: _createList,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue, // Your primary color
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text("Create new list")),
+            ),
             Expanded(
               child: FutureBuilder<List<dynamic>>(
                 future: listsFuture,
@@ -230,12 +286,14 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.edit),
+                                          color: Colors.blue[700],
                                           onPressed: () {
-                                            _updateCard(card['id'], "New name of card");
+                                            _showUpdateCardDialog(card['id'], card['name']);
                                           },
                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.delete),
+                                          color: Colors.red[700],
                                           onPressed: () {
                                             _deleteCard(card['id']);
                                           },
@@ -252,6 +310,10 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                             }
 
                             return Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 4,
                               child: ExpansionTile(
                                 title: Text(list['name']),
                                 children: [
@@ -266,12 +328,14 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                                   children: [
                                     IconButton(
                                       icon: const Icon(Icons.edit),
+                                      color: Colors.blue[700],
                                       onPressed: () {
                                         _showUpdateListDialog(list['id']);
                                       },
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.delete),
+                                      color: Colors.red[700],
                                       onPressed: () {
                                         _deleteList(list['id']);
                                       },
