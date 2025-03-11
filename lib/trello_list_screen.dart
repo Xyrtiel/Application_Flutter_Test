@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'trello_service.dart';
+import 'card_details_modal.dart';
 
 class TrelloListScreen extends StatefulWidget {
   final String boardId;
@@ -217,12 +218,12 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.boardName),
-        backgroundColor: Colors.blue, // Your primary color
+        backgroundColor: Colors.blue,
         elevation: 4,
       ),
-      backgroundColor: Colors.grey[200], // Background color
+      backgroundColor: Colors.grey[200],
       body: RefreshIndicator(
-        color: Colors.blue, // Your primary color
+        color: Colors.blue,
         onRefresh: () async {
           _fetchLists();
         },
@@ -233,7 +234,7 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
               child: ElevatedButton(
                   onPressed: _createList,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue, // Your primary color
+                    backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -268,6 +269,15 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                                 cardWidgets = cards.map((card) {
                                   final isClosed = _cardCompletionStatus[card['id']] ?? false;
                                   return ListTile(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => CardDetailsModal(
+                                          card: card,
+                                          trelloService: trelloService,
+                                        ),
+                                      );
+                                    },
                                     title: Text(
                                       card['name'],
                                       style: TextStyle(

@@ -74,9 +74,10 @@ class TrelloService {
     return await _makePostRequest(url, body);
   }
 
-  Future<void> updateCard(String cardId, String newName) async {
+   Future<void> updateCard(String cardId, String newName, [String? desc]) async {
     final url = Uri.parse("$baseUrl/cards/$cardId?key=$apiKey&token=$token");
     final body = {"name": newName};
+    if (desc != null) body['desc'] = desc; // Add description if provided
     await _makePutRequest(url, body);
   }
 
