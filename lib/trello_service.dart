@@ -74,7 +74,7 @@ class TrelloService {
     return await _makePostRequest(url, body);
   }
 
-   Future<void> updateCard(String cardId, String newName, [String? desc]) async {
+  Future<void> updateCard(String cardId, String newName, [String? desc]) async {
     final url = Uri.parse("$baseUrl/cards/$cardId?key=$apiKey&token=$token");
     final body = {"name": newName};
     if (desc != null) body['desc'] = desc; // Add description if provided
@@ -91,6 +91,12 @@ class TrelloService {
     await _makePutRequest(url, {});
   }
 
+  // --- Card Activities---
+  Future<List<dynamic>> getCardActivities(String cardId) async {
+    final url = Uri.parse("$baseUrl/cards/$cardId/actions?key=$apiKey&token=$token");
+    return await _makeRequest(url);
+  }
+
   // --- General Request Methods ---
 
   Future<List<dynamic>> _makeRequest(Uri url) async {
@@ -101,7 +107,7 @@ class TrelloService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception("Error making GET request");
+      throw Exception("Error making GET request: ${response.statusCode} - ${response.body}");
     }
   }
 
@@ -118,7 +124,7 @@ class TrelloService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception("Error making POST request");
+      throw Exception("Error making POST request: ${response.statusCode} - ${response.body}");
     }
   }
 
@@ -133,7 +139,7 @@ class TrelloService {
     print("PUT - Response Body: ${response.body}");
 
     if (response.statusCode != 200 && response.statusCode != 204) {
-      throw Exception("Error making PUT request");
+      throw Exception("Error making PUT request: ${response.statusCode} - ${response.body}");
     }
   }
 
@@ -144,7 +150,7 @@ class TrelloService {
     print("DELETE - Response Body: ${response.body}");
 
     if (response.statusCode != 200 && response.statusCode != 204) {
-      throw Exception("Error making DELETE request");
+      throw Exception("Error making DELETE request: ${response.statusCode} - ${response.body}");
     }
   }
 }
