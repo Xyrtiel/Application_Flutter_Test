@@ -161,7 +161,7 @@ class TrelloService {
 
   Future<void> updateChecklistItem(String checklistId, String checkItemId, {String? name, bool? checked}) async {
     final url = Uri.parse("$baseUrl/checklists/$checklistId/checkItems/$checkItemId?key=$apiKey&token=$token");
-     final body = {};
+     final Map<String, dynamic> body = {}; // Specify the type here!
      if (name != null) {
         body['name'] = name;
     }

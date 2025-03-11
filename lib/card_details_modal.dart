@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'trello_service.dart';
 import 'member_modal.dart';
 import 'label_modal.dart';
+import 'checklist_modal.dart';
 
 class CardDetailsModal extends StatefulWidget {
   final Map<String, dynamic> card;
@@ -135,7 +136,7 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
                         builder: (context) => MemberModal(
                           cardId: widget.card['id'],
                           trelloService: widget.trelloService,
-                          boardId: widget.boardId, // Pass the boardId here!
+                          boardId: widget.boardId, //pass boardId here
                         ),
                       );
                     },
@@ -157,7 +158,19 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
                     icon: const Icon(Icons.label_outline),
                     tooltip: "Etiquette",
                   ),
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.checklist), tooltip: "Checklist"),
+                   IconButton(
+                    onPressed: () {
+                       showDialog(
+                        context: context,
+                        builder: (context) => ChecklistModal(
+                          cardId: widget.card['id'],
+                          trelloService: widget.trelloService,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.checklist),
+                    tooltip: "Checklist",
+                  ),
                   IconButton(onPressed: () {}, icon: const Icon(Icons.date_range), tooltip: "Dates"),
                   IconButton(onPressed: () {}, icon: const Icon(Icons.attach_file), tooltip: "Pièce Jointe"),
                 ],
