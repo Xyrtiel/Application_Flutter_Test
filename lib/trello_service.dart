@@ -64,7 +64,7 @@ class TrelloService {
   // --- Cards ---
 
   Future<List<dynamic>> getCards(String listId) async {
-    final url = Uri.parse("$baseUrl/lists/$listId/cards?key=$apiKey&token=$token&fields=all&closed=true");
+    final url = Uri.parse("$baseUrl/lists/$listId/cards?key=$apiKey&token=$token&fields=all&closed=true&due=true"); // Add due=true here
     return await _makeRequest(url);
   }
 
@@ -109,7 +109,7 @@ class TrelloService {
   }
 
   Future<void> addMemberToCard(String cardId, String memberId) async {
-     final url = Uri.parse("$baseUrl/cards/$cardId/idMembers?key=$apiKey&token=$token&value=$memberId");
+    final url = Uri.parse("$baseUrl/cards/$cardId/idMembers?key=$apiKey&token=$token&value=$memberId");
     await _makePostRequest(url, {});
   }
 
@@ -125,7 +125,7 @@ class TrelloService {
   }
 
   Future<void> addLabelToCard(String cardId, String labelId) async {
-     final url = Uri.parse("$baseUrl/cards/$cardId/idLabels?key=$apiKey&token=$token&value=$labelId");
+    final url = Uri.parse("$baseUrl/cards/$cardId/idLabels?key=$apiKey&token=$token&value=$labelId");
     await _makePostRequest(url, {});
   }
 
@@ -147,37 +147,37 @@ class TrelloService {
     return await _makeRequest(url);
   }
 
-    Future<Map<String, dynamic>> createChecklist(String cardId, String name) async {
+  Future<Map<String, dynamic>> createChecklist(String cardId, String name) async {
     final url = Uri.parse("$baseUrl/checklists?key=$apiKey&token=$token");
     final body = {"name": name, "idCard": cardId};
     return await _makePostRequest(url, body);
   }
 
   Future<Map<String, dynamic>> addChecklistItem(String checklistId, String name, {bool checked = false}) async {
-     final url = Uri.parse("$baseUrl/checklists/$checklistId/checkItems?key=$apiKey&token=$token");
-     final body = {"name": name, "checked": checked};
+    final url = Uri.parse("$baseUrl/checklists/$checklistId/checkItems?key=$apiKey&token=$token");
+    final body = {"name": name, "checked": checked};
     return await _makePostRequest(url, body);
   }
 
   Future<void> updateChecklistItem(String checklistId, String checkItemId, {String? name, bool? checked}) async {
     final url = Uri.parse("$baseUrl/checklists/$checklistId/checkItems/$checkItemId?key=$apiKey&token=$token");
-     final Map<String, dynamic> body = {}; // Specify the type here!
-     if (name != null) {
-        body['name'] = name;
+    final Map<String, dynamic> body = {}; // Specify the type here!
+    if (name != null) {
+      body['name'] = name;
     }
     if (checked != null) {
-        body['state'] = checked ? 'complete' : 'incomplete';
+      body['state'] = checked ? 'complete' : 'incomplete';
     }
     await _makePutRequest(url, body);
   }
 
   Future<void> deleteChecklistItem(String checklistId, String checkItemId) async {
-      final url = Uri.parse("$baseUrl/checklists/$checklistId/checkItems/$checkItemId?key=$apiKey&token=$token");
-      await _makeDeleteRequest(url);
+    final url = Uri.parse("$baseUrl/checklists/$checklistId/checkItems/$checkItemId?key=$apiKey&token=$token");
+    await _makeDeleteRequest(url);
   }
 
   Future<void> deleteChecklist(String checklistId) async {
-      final url = Uri.parse("$baseUrl/checklists/$checklistId?key=$apiKey&token=$token");
+    final url = Uri.parse("$baseUrl/checklists/$checklistId?key=$apiKey&token=$token");
     await _makeDeleteRequest(url);
   }
 
@@ -196,16 +196,12 @@ class TrelloService {
   Future<dynamic> _makePostRequest(Uri url, Map<String, dynamic> body) async {
     final response = await http.post(
       url,
-       headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode(body),
     );
 
-     if (response.statusCode == 200) {
-      try{
-        return jsonDecode(response.body);
-      } catch (e){
-        return;
-      }
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
     } else {
       throw Exception("Error making POST request: ${response.statusCode} - ${response.body}");
     }

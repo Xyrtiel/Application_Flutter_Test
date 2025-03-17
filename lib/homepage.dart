@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'trello_service.dart';
 import 'login.dart';
 import 'trello_list_screen.dart';
+import 'package:provider/provider.dart';
+import 'theme_provider.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({Key? key}) : super(key: key);
@@ -58,14 +60,14 @@ class _HomepageState extends State<Homepage> {
               child: const Text("Create"),
               onPressed: () async {
                 final boardName = _boardNameController.text.trim();
-                if(boardName.isNotEmpty){
+                if (boardName.isNotEmpty) {
                   await trelloService.createBoard(boardName, null);
                   _fetchBoards(); // Refresh the list
                   _boardNameController.clear(); // Clear the text field
                   if (context.mounted) Navigator.of(context).pop(); // Close the dialog
                 } else {
-                  if(context.mounted) Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  if (context.mounted) Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text('Board name cannot be empty.'),
                   ));
                 }
@@ -109,14 +111,14 @@ class _HomepageState extends State<Homepage> {
               child: const Text("Update"),
               onPressed: () async {
                 final boardName = _boardNameController.text.trim();
-                if(boardName.isNotEmpty){
+                if (boardName.isNotEmpty) {
                   await trelloService.updateBoard(boardId, boardName);
                   _fetchBoards(); // Refresh the list after update
                   _boardNameController.clear(); // Clear the text field
                   if (context.mounted) Navigator.of(context).pop();
                 } else {
-                  if(context.mounted) Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  if (context.mounted) Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text('Board name cannot be empty.'),
                   ));
                 }
@@ -139,8 +141,19 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Scaffold(
-      appBar: AppBar(title: const Text("My Trello Boards")),
+      appBar: AppBar(
+        title: const Text("My Trello Boards"),
+        actions: [
+          IconButton(
+            icon: Icon(themeProvider.themeMode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode),
+            onPressed: () {
+              themeProvider.toggleTheme(!themeProvider.isDarkMode);
+            },
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () async {
           _fetchBoards();
@@ -179,7 +192,7 @@ class _HomepageState extends State<Homepage> {
                         return Card(
                           margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           child: ListTile(
-                            title: Text(board['name'] ?? "No Name"), // Add null check here
+                            title: Text(board['name'] ?? "No Name"),
                             subtitle: Text("ID: ${board['id']}"),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'trello_service.dart';
 import 'card_details_modal.dart';
+import 'calendar_page.dart'; // Import CalendarPage
 
 class TrelloListScreen extends StatefulWidget {
   final String boardId;
@@ -156,7 +157,7 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
               child: const Text("Create"),
               onPressed: () async {
                 await trelloService.createCard(listId, _cardNameController.text.trim());
-                 _fetchLists();
+                _fetchLists();
                 _cardNameController.clear();
                 if (context.mounted) {
                   Navigator.of(context).pop();
@@ -230,6 +231,17 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
       _cardCompletionStatus[cardId] = !(_cardCompletionStatus[cardId] ?? false);
     });
   }
+  void _navigateToCalendar() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CalendarPage(
+          trelloService: trelloService,
+          boardId: widget.boardId,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -238,6 +250,12 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
         title: Text(widget.boardName),
         backgroundColor: Colors.blue,
         elevation: 4,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_today),
+            onPressed: _navigateToCalendar,
+          ),
+        ],
       ),
       backgroundColor: Colors.grey[200],
       body: RefreshIndicator(
@@ -291,6 +309,7 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                                     onTap: () {
                                       showDialog(
                                         context: context,
+                                        barrierDismissible: true,
                                         builder: (context) => CardDetailsModal(
                                           card: card,
                                           trelloService: trelloService,

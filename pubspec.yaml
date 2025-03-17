@@ -21,8 +21,9 @@ dependencies:
   firebase_auth: ^4.15.3
   cloud_firestore: ^4.13.6
   firebase_storage: ^11.5.6
-  flutter_dotenv: ^5.1.0
   http: ^1.1.2
+  table_calendar: ^3.0.9 # Added table_calendar
+  
 
 # Development dependencies
 dev_dependencies:

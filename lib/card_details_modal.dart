@@ -3,34 +3,49 @@ import 'trello_service.dart';
 import 'member_modal.dart';
 import 'label_modal.dart';
 import 'checklist_modal.dart';
+import 'calendar_page.dart'; // Import CalendarPage
 
 class CardDetailsModal extends StatefulWidget {
   final Map<String, dynamic> card;
   final TrelloService trelloService;
   final String listId;
-  final String boardId; // Add the boardId parameter
+  final String boardId;
 
-  const CardDetailsModal({Key? key, required this.card, required this.trelloService, required this.listId, required this.boardId}) : super(key: key);
+  const CardDetailsModal({
+    Key? key,
+    required this.card,
+    required this.trelloService,
+    required this.listId,
+    required this.boardId,
+  }) : super(key: key);
 
   @override
   State<CardDetailsModal> createState() => _CardDetailsModalState();
 }
 
 class _CardDetailsModalState extends State<CardDetailsModal> {
-  TextEditingController? _descriptionController;
+  late TextEditingController _descriptionController;
   bool _isEditingDescription = false;
   late Future<List<dynamic>> _activitiesFuture;
+  late Future<List<dynamic>> _cardMembersFuture;
+  late Future<List<dynamic>> _boardMembersFuture;
+  late Future<List<dynamic>> _boardLabelsFuture;
+  late Future<List<dynamic>> _cardChecklistsFuture;
 
   @override
   void initState() {
     super.initState();
     _descriptionController = TextEditingController(text: widget.card['desc'] ?? "");
     _activitiesFuture = widget.trelloService.getCardActivities(widget.card['id']);
+    _cardMembersFuture = widget.trelloService.getCardMembers(widget.card['id']);
+    _boardMembersFuture = widget.trelloService.getBoardMembers(widget.boardId);
+    _boardLabelsFuture = widget.trelloService.getBoardLabels(widget.boardId);
+    _cardChecklistsFuture = widget.trelloService.getChecklists(widget.card['id']);
   }
 
   @override
   void dispose() {
-    _descriptionController?.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -38,9 +53,21 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
     setState(() {
       _isEditingDescription = !_isEditingDescription;
       if (!_isEditingDescription) {
-        widget.trelloService.updateCard(widget.card['id'], widget.card['name'], _descriptionController?.text);
+        widget.trelloService.updateCard(widget.card['id'], widget.card['name'], _descriptionController.text);
       }
     });
+  }
+
+  void _navigateToCalendar() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CalendarPage(
+          trelloService: widget.trelloService,
+          boardId: widget.boardId,
+        ),
+      ),
+    );
   }
 
   @override
@@ -76,7 +103,7 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
                           )
                         : GestureDetector(
                             onTap: _toggleEditDescription,
-                            child: Text(_descriptionController!.text.isEmpty ? "Add a more detailed description..." : _descriptionController!.text),
+                            child: Text(_descriptionController.text.isEmpty ? "Add a more detailed description..." : _descriptionController.text),
                           ),
                     const SizedBox(height: 10),
                     Row(
@@ -90,7 +117,7 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
                         if (_isEditingDescription)
                           ElevatedButton(
                             onPressed: _toggleEditDescription,
-                            child: const Text('Sauvegarder'),
+                            child: const Text('Save'),
                           ),
                       ],
                     ),
@@ -136,12 +163,12 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
                         builder: (context) => MemberModal(
                           cardId: widget.card['id'],
                           trelloService: widget.trelloService,
-                          boardId: widget.boardId, //pass boardId here
+                          boardId: widget.boardId,
                         ),
                       );
                     },
                     icon: const Icon(Icons.person_add),
-                    tooltip: "Membres",
+                    tooltip: "Members",
                   ),
                   IconButton(
                     onPressed: () {
@@ -150,17 +177,17 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
                         builder: (context) => LabelModal(
                           cardId: widget.card['id'],
                           trelloService: widget.trelloService,
-                          listId: widget.listId, // Pass listId here
-                          boardId: widget.boardId, // Pass boardId here
+                          listId: widget.listId,
+                          boardId: widget.boardId,
                         ),
                       );
                     },
                     icon: const Icon(Icons.label_outline),
-                    tooltip: "Etiquette",
+                    tooltip: "Labels",
                   ),
-                   IconButton(
+                  IconButton(
                     onPressed: () {
-                       showDialog(
+                      showDialog(
                         context: context,
                         builder: (context) => ChecklistModal(
                           cardId: widget.card['id'],
@@ -171,8 +198,12 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
                     icon: const Icon(Icons.checklist),
                     tooltip: "Checklist",
                   ),
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.date_range), tooltip: "Dates"),
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.attach_file), tooltip: "Pièce Jointe"),
+                  IconButton(
+                    onPressed: _navigateToCalendar,
+                    icon: const Icon(Icons.date_range),
+                    tooltip: "Dates",
+                  ),
+                  IconButton(onPressed: () {}, icon: const Icon(Icons.attach_file), tooltip: "Attachment"),
                 ],
               )
             ],
