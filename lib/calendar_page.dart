@@ -3,173 +3,216 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
-import 'trello_service.dart';
+import 'trello_service.dart'; // Correct import
 
-class CalendarPage extends StatefulWidget {
-  final TrelloService trelloService;
-  final String boardId;
+class PageCalendrier extends StatefulWidget {
+  final TrelloService trelloService; // Corrected type
+  final String idTableau;
 
-  const CalendarPage({Key? key, required this.trelloService, required this.boardId}) : super(key: key);
+  const PageCalendrier({Key? key, required this.trelloService, required this.idTableau}) : super(key: key);
 
   @override
-  _CalendarPageState createState() => _CalendarPageState();
+  _PageCalendrierState createState() => _PageCalendrierState();
 }
 
-class _CalendarPageState extends State<CalendarPage> {
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
-  CalendarFormat _calendarFormat = CalendarFormat.month;
-  Map<DateTime, List<CalendarEvent>> _events = {};
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+class _PageCalendrierState extends State<PageCalendrier> {
+  DateTime _jourSelectionne = DateTime.now();
+  DateTime? _jourCourant;
+  CalendarFormat _formatCalendrier = CalendarFormat.month;
+  Map<DateTime, List<EvenementCalendrier>> _evenements = {};
+  final FlutterLocalNotificationsPlugin _pluginNotificationsLocales = FlutterLocalNotificationsPlugin();
+  final String _idCanal = 'canal_evenement_calendrier'; // ID unique du canal
+  final String _nomCanal = 'Rappels d\'événements du calendrier'; // Nom du canal
+  final String _descriptionCanal = 'Rappels pour les événements du calendrier'; // Description du canal
 
   @override
   void initState() {
     super.initState();
-    _initializeNotifications();
-    _loadTrelloEvents();
+    _initialiserNotifications();
+    _chargerEvenementsTrello();
     tz_data.initializeTimeZones();
+    _configurerFuseauHoraireLocal();
   }
 
-  Future<void> _initializeNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-    AndroidInitializationSettings('app_icon'); // Replace 'app_icon' with your app's icon
-    final InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
+  Future<void> _configurerFuseauHoraireLocal() async {
+    // Removed the try-catch block and FlutterNativeTimezone
+    tz.setLocalLocation(tz.local); // Set the local timezone directly
+  }
+
+  Future<void> _initialiserNotifications() async {
+    const AndroidInitializationSettings parametresInitialisationAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher'); // Utilisez l'icône de votre application
+    final InitializationSettings parametresInitialisation = InitializationSettings(
+      android: parametresInitialisationAndroid,
     );
-    await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    await _pluginNotificationsLocales.initialize(parametresInitialisation,
+        onDidReceiveNotificationResponse: _onReceptionReponseNotification);
+    // Créer le canal de notification
+    await _creerCanalNotification();
   }
 
-  Future<void> _scheduleNotification(CalendarEvent event) async {
-    if (event.reminderTime != null) {
-      final reminderDateTime = event.startDate.subtract(Duration(minutes: event.reminderTime!));
-      if (reminderDateTime.isAfter(DateTime.now())) {
-        await _flutterLocalNotificationsPlugin.zonedSchedule(
-          event.hashCode,
-          'Reminder: ${event.title}',
-          event.description,
-          tz.TZDateTime.from(reminderDateTime, tz.local),
-          const NotificationDetails(
-            android: AndroidNotificationDetails('your channel id', 'your channel name',
-                channelDescription: 'your channel description'),
-          ),
-          androidAllowWhileIdle: true,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-        );
-      }
+  Future<void> _creerCanalNotification() async {
+    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+      final AndroidNotificationChannel canal = AndroidNotificationChannel(
+        _idCanal,
+        _nomCanal,
+        description: _descriptionCanal,
+        importance: Importance.max,
+      );
+      await _pluginNotificationsLocales
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(canal);
     }
   }
 
-  Future<void> _loadTrelloEvents() async {
+  void _onReceptionReponseNotification(NotificationResponse notificationResponse) async {
+    // Gérer la réponse à la notification ici
+    print('Réponse à la notification : ${notificationResponse.payload}');
+  }
+
+  Future<void> _programmerNotification(EvenementCalendrier evenement) async {
+    if (evenement.tempsRappel != null) {
+      final DateTime dateRappel = evenement.dateDebut.subtract(Duration(minutes: evenement.tempsRappel!));
+      if (dateRappel.isAfter(DateTime.now())) {
+        print('Programmation de la notification pour : ${evenement.titre} à ${dateRappel}');
+        final AndroidNotificationDetails detailsNotificationAndroid = AndroidNotificationDetails(
+          _idCanal, // Utiliser l'ID du canal
+          _nomCanal,
+          channelDescription: _descriptionCanal,
+          importance: Importance.max,
+          priority: Priority.high,
+          ticker: 'ticker',
+        );
+        final NotificationDetails detailsNotification = NotificationDetails(android: detailsNotificationAndroid);
+        await _pluginNotificationsLocales.zonedSchedule(
+          evenement.hashCode, // Utiliser un ID unique pour chaque événement
+          'Rappel : ${evenement.titre}',
+          evenement.description,
+          tz.TZDateTime.from(dateRappel, tz.local),
+          detailsNotification,
+          androidAllowWhileIdle: true,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        );
+        print('Notification programmée avec succès !');
+      } else {
+        print('L\'heure du rappel est dans le passé. Non programmé.');
+      }
+    } else {
+      print('L\'heure du rappel n\'est pas définie pour cet événement.');
+    }
+  }
+
+  Future<void> _chargerEvenementsTrello() async {
     try {
-      List<dynamic> lists = await widget.trelloService.getLists(widget.boardId);
-      Map<DateTime, List<CalendarEvent>> newEvents = {};
-      for (var list in lists) {
-        List<dynamic> cards = await widget.trelloService.getCards(list['id']);
-        for (var card in cards) {
-          DateTime? startDate;
-          DateTime? endDate;
-          int? reminderTime;
+      List<dynamic> listes = await widget.trelloService.getLists(widget.idTableau);
+      Map<DateTime, List<EvenementCalendrier>> nouveauxEvenements = {};
+      for (var liste in listes) {
+        List<dynamic> cartes = await widget.trelloService.getCards(liste['id']);
+        for (var carte in cartes) {
+          DateTime? dateDebut;
+          DateTime? dateFin;
+          int? tempsRappel;
           String description = "";
 
-          if (card['start'] != null) {
-            startDate = DateTime.parse(card['start']);
+          if (carte['start'] != null) {
+            dateDebut = DateTime.parse(carte['start']);
           }
-          if (card['due'] != null) {
-            endDate = DateTime.parse(card['due']);
+          if (carte['due'] != null) {
+            dateFin = DateTime.parse(carte['due']);
           }
-          if (card['reminder'] != null) {
-            reminderTime = card['reminder'];
+          if (carte['reminder'] != null) {
+            tempsRappel = carte['reminder'];
           }
-          if (card['desc'] != null) {
-            description = card['desc'];
+          if (carte['desc'] != null) {
+            description = carte['desc'];
           }
 
-          if (startDate != null && endDate != null) {
-            DateTime formattedStartDate = DateTime(startDate.year, startDate.month, startDate.day);
-            DateTime formattedEndDate = DateTime(endDate.year, endDate.month, endDate.day);
-            CalendarEvent newEvent = CalendarEvent(
-              title: card['name'],
-              startDate: formattedStartDate,
-              endDate: formattedEndDate,
-              reminderTime: reminderTime,
+          if (dateDebut != null && dateFin != null) {
+            DateTime dateDebutFormatee = DateTime(dateDebut.year, dateDebut.month, dateDebut.day);
+            DateTime dateFinFormatee = DateTime(dateFin.year, dateFin.month, dateFin.day);
+            EvenementCalendrier nouvelEvenement = EvenementCalendrier(
+              titre: carte['name'],
+              dateDebut: dateDebutFormatee,
+              dateFin: dateFinFormatee,
+              tempsRappel: tempsRappel,
               description: description,
             );
-            for (DateTime day = formattedStartDate; day.isBefore(formattedEndDate.add(const Duration(days: 1))); day = day.add(const Duration(days: 1))) {
-              if (newEvents[day] == null) {
-                newEvents[day] = [];
+            for (DateTime jour = dateDebutFormatee; jour.isBefore(dateFinFormatee.add(const Duration(days: 1))); jour = jour.add(const Duration(days: 1))) {
+              if (nouveauxEvenements[jour] == null) {
+                nouveauxEvenements[jour] = [];
               }
-              newEvents[day]!.add(newEvent);
+              nouveauxEvenements[jour]!.add(nouvelEvenement);
             }
-            _scheduleNotification(newEvent);
+            _programmerNotification(nouvelEvenement);
           }
         }
       }
       setState(() {
-        _events = newEvents;
+        _evenements = nouveauxEvenements;
       });
     } catch (e) {
-      print("Error loading Trello events: $e");
+      print("Erreur lors du chargement des événements Trello : $e");
     }
   }
 
-  void _showAddEventDialog(DateTime day) {
-    String title = '';
-    DateTime startDate = day;
-    DateTime endDate = day;
-    int? reminderTime;
+  void _afficherDialogueAjoutEvenement(DateTime jour) {
+    String titre = '';
+    DateTime dateDebut = jour;
+    DateTime dateFin = jour;
+    int? tempsRappel;
     String description = "";
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Add Event'),
+          title: const Text('Ajouter un événement'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 TextField(
-                  decoration: const InputDecoration(hintText: 'Title'),
-                  onChanged: (value) => title = value,
+                  decoration: const InputDecoration(hintText: 'Titre'),
+                  onChanged: (value) => titre = value,
                 ),
                 ListTile(
-                  title: Text('Start Date: ${startDate.toLocal().toString().split(' ')[0]}'),
+                  title: Text('Date de début : ${dateDebut.toLocal().toString().split(' ')[0]}'),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
-                    final DateTime? picked = await showDatePicker(
+                    final DateTime? selection = await showDatePicker(
                       context: context,
-                      initialDate: startDate,
+                      initialDate: dateDebut,
                       firstDate: DateTime(2000),
                       lastDate: DateTime(2100),
                     );
-                    if (picked != null && picked != startDate) {
+                    if (selection != null && selection != dateDebut) {
                       setState(() {
-                        startDate = picked;
+                        dateDebut = selection;
                       });
                     }
                   },
                 ),
                 ListTile(
-                  title: Text('End Date: ${endDate.toLocal().toString().split(' ')[0]}'),
+                  title: Text('Date de fin : ${dateFin.toLocal().toString().split(' ')[0]}'),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
-                    final DateTime? picked = await showDatePicker(
+                    final DateTime? selection = await showDatePicker(
                       context: context,
-                      initialDate: endDate,
+                      initialDate: dateFin,
                       firstDate: DateTime(2000),
                       lastDate: DateTime(2100),
                     );
-                    if (picked != null && picked != endDate) {
+                    if (selection != null && selection != dateFin) {
                       setState(() {
-                        endDate = picked;
+                        dateFin = selection;
                       });
                     }
                   },
                 ),
                 TextField(
-                  decoration: const InputDecoration(hintText: 'Reminder Time (minutes before)'),
+                  decoration: const InputDecoration(hintText: 'Temps de rappel (minutes avant)'),
                   keyboardType: TextInputType.number,
-                  onChanged: (value) => reminderTime = int.tryParse(value),
+                  onChanged: (value) => tempsRappel = int.tryParse(value),
                 ),
                 TextField(
                   decoration: const InputDecoration(hintText: 'Description'),
@@ -180,26 +223,26 @@ class _CalendarPageState extends State<CalendarPage> {
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel'),
+              child: const Text('Annuler'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: const Text('Add'),
+              child: const Text('Ajouter'),
               onPressed: () async {
-                if (title.isNotEmpty) {
-                  CalendarEvent newEvent = CalendarEvent(
-                    title: title,
-                    startDate: startDate,
-                    endDate: endDate,
-                    reminderTime: reminderTime,
+                if (titre.isNotEmpty) {
+                  EvenementCalendrier nouvelEvenement = EvenementCalendrier(
+                    titre: titre,
+                    dateDebut: dateDebut,
+                    dateFin: dateFin,
+                    tempsRappel: tempsRappel,
                     description: description,
                   );
-                  await widget.trelloService.createCardWithDetails(widget.boardId, title, startDate, endDate, reminderTime, description);
-                  _scheduleNotification(newEvent);
+                  await widget.trelloService.createCardWithDetails(widget.idTableau, titre, dateDebut, dateFin, tempsRappel, description);
+                  _programmerNotification(nouvelEvenement);
                   setState(() {
-                    _loadTrelloEvents();
+                    _chargerEvenementsTrello();
                   });
                   if (context.mounted) Navigator.of(context).pop();
                 }
@@ -215,38 +258,38 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Calendar'),
+        title: const Text('Calendrier'),
       ),
       body: Column(
         children: [
           TableCalendar(
             firstDay: DateTime.utc(2010, 10, 16),
             lastDay: DateTime.utc(2030, 3, 14),
-            focusedDay: _focusedDay,
-            calendarFormat: _calendarFormat,
-            selectedDayPredicate: (day) {
-              return isSameDay(_selectedDay, day);
+            focusedDay: _jourSelectionne,
+            calendarFormat: _formatCalendrier,
+            selectedDayPredicate: (jour) {
+              return isSameDay(_jourCourant, jour);
             },
-            onDaySelected: (selectedDay, focusedDay) {
-              if (!isSameDay(_selectedDay, selectedDay)) {
+            onDaySelected: (jourSelectionne, jourCourant) {
+              if (!isSameDay(_jourCourant, jourSelectionne)) {
                 setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay;
+                  _jourCourant = jourSelectionne;
+                  _jourSelectionne = jourCourant;
                 });
               }
             },
             onFormatChanged: (format) {
-              if (_calendarFormat != format) {
+              if (_formatCalendrier != format) {
                 setState(() {
-                  _calendarFormat = format;
+                  _formatCalendrier = format;
                 });
               }
             },
-            onPageChanged: (focusedDay) {
-              _focusedDay = focusedDay;
+            onPageChanged: (jourSelectionne) {
+              _jourSelectionne = jourSelectionne;
             },
-            eventLoader: (day) {
-              return _events[day] ?? [];
+            eventLoader: (jour) {
+              return _evenements[jour] ?? [];
             },
             calendarBuilders: CalendarBuilders(
               selectedBuilder: (context, date, _) {
@@ -277,12 +320,12 @@ class _CalendarPageState extends State<CalendarPage> {
                   ),
                 );
               },
-              markerBuilder: (context, date, events) {
-                if (events.isNotEmpty) {
+              markerBuilder: (context, date, evenements) {
+                if (evenements.isNotEmpty) {
                   return Positioned(
                     right: 1,
                     bottom: 1,
-                    child: _buildEventsMarker(date, events),
+                    child: _construireMarqueurEvenements(date, evenements),
                   );
                 }
                 return null;
@@ -290,15 +333,15 @@ class _CalendarPageState extends State<CalendarPage> {
             ),
           ),
           const SizedBox(height: 20),
-          if (_selectedDay != null)
+          if (_jourCourant != null)
             Expanded(
               child: ListView.builder(
-                itemCount: _events[_selectedDay]?.length ?? 0,
+                itemCount: _evenements[_jourCourant]?.length ?? 0,
                 itemBuilder: (context, index) {
-                  final event = _events[_selectedDay]![index];
+                  final evenement = _evenements[_jourCourant]![index];
                   return ListTile(
-                    title: Text(event.title),
-                    subtitle: Text(event.description),
+                    title: Text(evenement.titre),
+                    subtitle: Text(evenement.description),
                   );
                 },
               ),
@@ -306,13 +349,13 @@ class _CalendarPageState extends State<CalendarPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddEventDialog(_selectedDay ?? DateTime.now()),
+        onPressed: () => _afficherDialogueAjoutEvenement(_jourCourant ?? DateTime.now()),
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildEventsMarker(DateTime date, List events) {
+  Widget _construireMarqueurEvenements(DateTime date, List evenements) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       decoration: BoxDecoration(
@@ -323,7 +366,7 @@ class _CalendarPageState extends State<CalendarPage> {
       height: 16.0,
       child: Center(
         child: Text(
-          '${events.length}',
+          '${evenements.length}',
           style: const TextStyle(
             color: Colors.white,
             fontSize: 10.0,
@@ -334,18 +377,18 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 }
 
-class CalendarEvent {
-  final String title;
-  final DateTime startDate;
-  final DateTime endDate;
-  final int? reminderTime;
+class EvenementCalendrier {
+  final String titre;
+  final DateTime dateDebut;
+  final DateTime dateFin;
+  final int? tempsRappel;
   final String description;
 
-  CalendarEvent({
-    required this.title,
-    required this.startDate,
-    required this.endDate,
-    this.reminderTime,
+  EvenementCalendrier({
+    required this.titre,
+    required this.dateDebut,
+    required this.dateFin,
+    this.tempsRappel,
     required this.description,
   });
 }

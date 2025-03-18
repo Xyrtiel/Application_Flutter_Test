@@ -3,7 +3,7 @@ import 'trello_service.dart';
 import 'member_modal.dart';
 import 'label_modal.dart';
 import 'checklist_modal.dart';
-import 'calendar_page.dart'; // Import CalendarPage
+import 'calendar_page.dart'; // Correct import: PageCalendrier
 
 class CardDetailsModal extends StatefulWidget {
   final Map<String, dynamic> card;
@@ -62,9 +62,9 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CalendarPage(
+        builder: (context) => PageCalendrier( // Corrected: PageCalendrier
           trelloService: widget.trelloService,
-          boardId: widget.boardId,
+          idTableau: widget.boardId,
         ),
       ),
     );

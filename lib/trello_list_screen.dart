@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'trello_service.dart';
 import 'card_details_modal.dart';
-import 'calendar_page.dart';
+import 'calendar_page.dart'; // Correct import: PageCalendrier
 
 class TrelloListScreen extends StatefulWidget {
   final String boardId;
@@ -15,7 +15,7 @@ class TrelloListScreen extends StatefulWidget {
 
 class _TrelloListScreenState extends State<TrelloListScreen> {
   late Future<List<dynamic>> listsFuture;
-  final TrelloService trelloService = TrelloService();
+  final TrelloService trelloService = TrelloService(); // Corrected: TrelloService
   final TextEditingController _listNameController = TextEditingController();
   final TextEditingController _cardNameController = TextEditingController();
   final Map<String, bool> _cardCompletionStatus = {};
@@ -235,9 +235,9 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CalendarPage(
+        builder: (context) => PageCalendrier( // Corrected: PageCalendrier
           trelloService: trelloService,
-          boardId: widget.boardId,
+          idTableau: widget.boardId,
         ),
       ),
     );
