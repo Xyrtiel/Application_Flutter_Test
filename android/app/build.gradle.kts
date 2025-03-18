@@ -10,21 +10,22 @@ android {
     ndkVersion = "27.0.12077973" // NDK version requise par certains plugins
 
     namespace = "com.example.flutter_application_test"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 34 // Use a recent version
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_11 // Use Java 11 or 17
+        targetCompatibility = JavaVersion.VERSION_11 // Use Java 11 or 17
+        isCoreLibraryDesugaringEnabled = true // Keep this line
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "11" // Use Java 11 or 17
     }
 
     defaultConfig {
         applicationId = "com.example.flutter_application_test" // Unique ID de l'application
         minSdk = 23 // Minimum SDK requis
-        targetSdk = flutter.targetSdkVersion // Cible la version SDK de Flutter
+        targetSdk = 34 // Cible la version SDK de Flutter
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -35,6 +36,10 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4") // Keep this line
 }
 
 flutter {

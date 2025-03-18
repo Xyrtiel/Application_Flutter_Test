@@ -64,7 +64,7 @@ class TrelloService {
   // --- Cards ---
 
   Future<List<dynamic>> getCards(String listId) async {
-    final url = Uri.parse("$baseUrl/lists/$listId/cards?key=$apiKey&token=$token&fields=all&closed=true&due=true"); // Add due=true here
+    final url = Uri.parse("$baseUrl/lists/$listId/cards?key=$apiKey&token=$token&fields=all&closed=true&due=true&start=true&desc=true"); // Add due=true, start=true and desc=true here
     return await _makeRequest(url);
   }
 
@@ -224,6 +224,58 @@ class TrelloService {
 
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception("Error making DELETE request: ${response.statusCode} - ${response.body}");
+    }
+  }
+
+  // --- Calendar ---
+  Future<void> createCardWithDetails(String boardId, String name, DateTime startDate, DateTime endDate, int? reminderTime, String description) async {
+    // First, get the first list ID of the board
+    List<dynamic> lists = await getLists(boardId);
+    if (lists.isEmpty) {
+      throw Exception('No lists found in the board');
+    }
+    String listId = lists[0]['id'];
+
+    // Format dates to ISO 8601
+    String formattedStartDate = startDate.toIso8601String();
+    String formattedEndDate = endDate.toIso8601String();
+
+    // Create the card with the details
+    final url = '$baseUrl/cards?name=$name&idList=$listId&key=$apiKey&token=$token';
+    final response = await http.post(
+      Uri.parse(url),
+      body: json.encode({
+        'start': formattedStartDate,
+        'due': formattedEndDate,
+        'reminder': reminderTime,
+        'desc': description,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to create card with details: ${response.body}');
+    }
+    // Update the card with the details
+    final cardId = json.decode(response.body)['id'];
+    await updateCardDetails(cardId, formattedStartDate, formattedEndDate, reminderTime, description);
+  }
+
+  Future<void> updateCardDetails(String cardId, String startDate, String endDate, int? reminderTime, String description) async {
+    final url = '$baseUrl/cards/$cardId?key=$apiKey&token=$token';
+    final response = await http.put(
+      Uri.parse(url),
+      body: json.encode({
+        'start': startDate,
+        'due': endDate,
+        'reminder': reminderTime,
+        'desc': description,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update card details: ${response.body}');
     }
   }
 }
