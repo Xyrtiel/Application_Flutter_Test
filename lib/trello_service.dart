@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'secrets.dart';
+import 'secrets.dart'; // Import secrets.dart
 
 class TrelloService {
   final String baseUrl = "https://api.trello.com/1";
   final String apiKey = Secrets.trelloApiKey;
-  final String token = Secrets.trelloToken;
+  final String token = Secrets.trelloToken; 
 
   // --- Boards ---
 

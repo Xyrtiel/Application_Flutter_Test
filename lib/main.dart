@@ -4,13 +4,15 @@ import 'firebase_options.dart';
 import 'splash_screen.dart';
 import 'theme_provider.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
+import 'package:path/path.dart' as path;
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
   try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     print("Firebase Initialized");
   } catch (e) {
     print("Firebase initialization error: $e");
