@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'trello_service.dart';
-import 'login.dart';
-import 'trello_list_screen.dart';
+import '../features/trello_service.dart';
+import '../auth/login.dart';
+import '../screens/trello_list_screen.dart';
 import 'package:provider/provider.dart';
-import 'theme_provider.dart';
+import '../config/theme_provider.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({Key? key}) : super(key: key);
@@ -64,7 +64,8 @@ class _HomepageState extends State<Homepage> {
                   await trelloService.createBoard(boardName, null);
                   _fetchBoards(); // Refresh the list
                   _boardNameController.clear(); // Clear the text field
-                  if (context.mounted) Navigator.of(context).pop(); // Close the dialog
+                  if (context.mounted)
+                    Navigator.of(context).pop(); // Close the dialog
                 } else {
                   if (context.mounted) Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -88,7 +89,8 @@ class _HomepageState extends State<Homepage> {
     }
   }
 
-  Future<void> _showUpdateBoardDialog(String boardId, String currentName) async {
+  Future<void> _showUpdateBoardDialog(
+      String boardId, String currentName) async {
     _boardNameController.text = currentName;
     await showDialog(
       context: context,
@@ -147,7 +149,9 @@ class _HomepageState extends State<Homepage> {
         title: const Text("My Trello Boards"),
         actions: [
           IconButton(
-            icon: Icon(themeProvider.themeMode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode),
+            icon: Icon(themeProvider.themeMode == ThemeMode.dark
+                ? Icons.light_mode
+                : Icons.dark_mode),
             onPressed: () {
               themeProvider.toggleTheme(!themeProvider.isDarkMode);
             },
@@ -168,10 +172,12 @@ class _HomepageState extends State<Homepage> {
                         ? 'Anonymous user connected'
                         : 'Email: ${user?.email ?? "Not available"}')
                     : 'No user connected',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
-            ElevatedButton(onPressed: _createBoard, child: const Text("Create new board")),
+            ElevatedButton(
+                onPressed: _createBoard, child: const Text("Create new board")),
             Expanded(
               child: FutureBuilder<List<dynamic>>(
                 future: boardsFuture,
@@ -181,7 +187,8 @@ class _HomepageState extends State<Homepage> {
                   } else if (snapshot.hasError) {
                     return Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Text("Error getting boards: ${snapshot.error}", style: const TextStyle(color: Colors.red)),
+                      child: Text("Error getting boards: ${snapshot.error}",
+                          style: const TextStyle(color: Colors.red)),
                     );
                   } else if (snapshot.hasData) {
                     final boards = snapshot.data!;
@@ -190,7 +197,8 @@ class _HomepageState extends State<Homepage> {
                       itemBuilder: (context, index) {
                         final board = boards[index];
                         return Card(
-                          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
                           child: ListTile(
                             title: Text(board['name'] ?? "No Name"),
                             subtitle: Text("ID: ${board['id']}"),
@@ -200,7 +208,8 @@ class _HomepageState extends State<Homepage> {
                                 IconButton(
                                   icon: const Icon(Icons.edit),
                                   onPressed: () {
-                                    _showUpdateBoardDialog(board['id'], board['name']);
+                                    _showUpdateBoardDialog(
+                                        board['id'], board['name']);
                                   },
                                 ),
                                 IconButton(

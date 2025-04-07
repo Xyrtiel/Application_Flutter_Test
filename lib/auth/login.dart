@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'homepage.dart';
+import '../screens/homepage.dart';
 import 'auth_service.dart';
 
 class Login extends StatefulWidget {
@@ -36,7 +36,8 @@ class _LoginState extends State<Login> {
 
   void updateFieldsStatus() {
     setState(() {
-      areFieldsFilled = emailController.text.isNotEmpty && passwordController.text.isNotEmpty;
+      areFieldsFilled =
+          emailController.text.isNotEmpty && passwordController.text.isNotEmpty;
     });
   }
 
@@ -45,15 +46,14 @@ class _LoginState extends State<Login> {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
 
-    debugPrint("Email: $email, Password: ${password.isNotEmpty ? "****" : "(vide)"}");
+    debugPrint(
+        "Email: $email, Password: ${password.isNotEmpty ? "****" : "(vide)"}");
 
     setState(() => isLoading = true);
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password
-      );
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
 
       debugPrint("=== USER CONNECTÉ ===");
       debugPrint("User UID: ${userCredential.user?.uid}");
@@ -63,7 +63,6 @@ class _LoginState extends State<Login> {
           MaterialPageRoute(builder: (context) => const Homepage()),
         );
       }
-
     } on FirebaseAuthException catch (e) {
       debugPrint("=== ERREUR FIREBASE === Code: ${e.code}");
       _showError(_getFirebaseErrorMessage(e.code));
@@ -140,15 +139,17 @@ class _LoginState extends State<Login> {
               obscureText: true,
             ),
             const SizedBox(height: 20),
-
             isLoading
                 ? const CircularProgressIndicator()
                 : Column(
                     children: [
                       ElevatedButton(
-                        onPressed: areFieldsFilled ? signIn : null, // Disable button if fields are not filled
+                        onPressed: areFieldsFilled
+                            ? signIn
+                            : null, // Disable button if fields are not filled
                         style: ElevatedButton.styleFrom(
-                          disabledBackgroundColor: Colors.grey, // Style for disabled button
+                          disabledBackgroundColor:
+                              Colors.grey, // Style for disabled button
                         ),
                         child: const Text("Se connecter"),
                       ),

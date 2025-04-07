@@ -3,7 +3,7 @@ import 'trello_service.dart';
 import 'member_modal.dart';
 import 'label_modal.dart';
 import 'checklist_modal.dart';
-import 'calendar_page.dart'; // Correct import: PageCalendrier
+import '../screens/calendar_page.dart'; // Correct import: PageCalendrier
 
 class CardDetailsModal extends StatefulWidget {
   final Map<String, dynamic> card;
@@ -35,12 +35,15 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
   @override
   void initState() {
     super.initState();
-    _descriptionController = TextEditingController(text: widget.card['desc'] ?? "");
-    _activitiesFuture = widget.trelloService.getCardActivities(widget.card['id']);
+    _descriptionController =
+        TextEditingController(text: widget.card['desc'] ?? "");
+    _activitiesFuture =
+        widget.trelloService.getCardActivities(widget.card['id']);
     _cardMembersFuture = widget.trelloService.getCardMembers(widget.card['id']);
     _boardMembersFuture = widget.trelloService.getBoardMembers(widget.boardId);
     _boardLabelsFuture = widget.trelloService.getBoardLabels(widget.boardId);
-    _cardChecklistsFuture = widget.trelloService.getChecklists(widget.card['id']);
+    _cardChecklistsFuture =
+        widget.trelloService.getChecklists(widget.card['id']);
   }
 
   @override
@@ -53,7 +56,8 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
     setState(() {
       _isEditingDescription = !_isEditingDescription;
       if (!_isEditingDescription) {
-        widget.trelloService.updateCard(widget.card['id'], widget.card['name'], _descriptionController.text);
+        widget.trelloService.updateCard(widget.card['id'], widget.card['name'],
+            _descriptionController.text);
       }
     });
   }
@@ -62,7 +66,8 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PageCalendrier( // Corrected: PageCalendrier
+        builder: (context) => PageCalendrier(
+          // Corrected: PageCalendrier
           trelloService: widget.trelloService,
           idTableau: widget.boardId,
         ),
@@ -86,7 +91,9 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(widget.card['name'], style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text(widget.card['name'],
+                            style: const TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold)),
                         IconButton(
                           icon: const Icon(Icons.close),
                           onPressed: () => Navigator.of(context).pop(),
@@ -94,16 +101,21 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    const Text("Description", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const Text("Description",
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
                     _isEditingDescription
                         ? TextFormField(
                             controller: _descriptionController,
                             maxLines: 5,
-                            decoration: const InputDecoration(hintText: "Add a more detailed description..."),
+                            decoration: const InputDecoration(
+                                hintText: "Add a more detailed description..."),
                           )
                         : GestureDetector(
                             onTap: _toggleEditDescription,
-                            child: Text(_descriptionController.text.isEmpty ? "Add a more detailed description..." : _descriptionController.text),
+                            child: Text(_descriptionController.text.isEmpty
+                                ? "Add a more detailed description..."
+                                : _descriptionController.text),
                           ),
                     const SizedBox(height: 10),
                     Row(
@@ -122,15 +134,20 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    const Text("Activity", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const Text("Activity",
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
                     FutureBuilder<List<dynamic>>(
                       future: _activitiesFuture,
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
                         } else if (snapshot.hasError) {
                           return Text('Error: ${snapshot.error}');
-                        } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                        } else if (snapshot.hasData &&
+                            snapshot.data!.isNotEmpty) {
                           return ListView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
@@ -203,7 +220,10 @@ class _CardDetailsModalState extends State<CardDetailsModal> {
                     icon: const Icon(Icons.date_range),
                     tooltip: "Dates",
                   ),
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.attach_file), tooltip: "Attachment"),
+                  IconButton(
+                      onPressed: () {},
+                      icon: const Icon(Icons.attach_file),
+                      tooltip: "Attachment"),
                 ],
               )
             ],

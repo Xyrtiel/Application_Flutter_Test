@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'trello_service.dart';
-import 'card_details_modal.dart';
-import 'calendar_page.dart'; // Correct import: PageCalendrier
+import '../features/trello_service.dart';
+import '../features/card_details_modal.dart';
+import 'calendar_page.dart';
 
 class TrelloListScreen extends StatefulWidget {
   final String boardId;
   final String boardName;
 
-  const TrelloListScreen({Key? key, required this.boardId, required this.boardName}) : super(key: key);
+  const TrelloListScreen(
+      {Key? key, required this.boardId, required this.boardName})
+      : super(key: key);
 
   @override
   State<TrelloListScreen> createState() => _TrelloListScreenState();
@@ -15,12 +17,14 @@ class TrelloListScreen extends StatefulWidget {
 
 class _TrelloListScreenState extends State<TrelloListScreen> {
   late Future<List<dynamic>> listsFuture;
-  final TrelloService trelloService = TrelloService(); // Corrected: TrelloService
+  final TrelloService trelloService =
+      TrelloService(); // Corrected: TrelloService
   final TextEditingController _listNameController = TextEditingController();
   final TextEditingController _cardNameController = TextEditingController();
   final Map<String, bool> _cardCompletionStatus = {};
   final GlobalKey _updateCardDialogKey = GlobalKey();
-  final TextEditingController _cardNameControllerForDialog = TextEditingController();
+  final TextEditingController _cardNameControllerForDialog =
+      TextEditingController();
 
   @override
   void initState() {
@@ -156,7 +160,8 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
             TextButton(
               child: const Text("Create"),
               onPressed: () async {
-                await trelloService.createCard(listId, _cardNameController.text.trim());
+                await trelloService.createCard(
+                    listId, _cardNameController.text.trim());
                 _fetchLists();
                 _cardNameController.clear();
                 if (context.mounted) {
@@ -182,7 +187,8 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
               title: const Text("Update Card Name"),
               content: TextField(
                 controller: _cardNameControllerForDialog,
-                decoration: const InputDecoration(hintText: "Enter new card name"),
+                decoration:
+                    const InputDecoration(hintText: "Enter new card name"),
               ),
               actions: <Widget>[
                 TextButton(
@@ -194,7 +200,8 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                 TextButton(
                   child: const Text("Update"),
                   onPressed: () async {
-                    await _updateCard(cardId, _cardNameControllerForDialog.text);
+                    await _updateCard(
+                        cardId, _cardNameControllerForDialog.text);
                     if (context.mounted) {
                       Navigator.of(context).pop();
                     }
@@ -231,11 +238,13 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
       _cardCompletionStatus[cardId] = !(_cardCompletionStatus[cardId] ?? false);
     });
   }
+
   void _navigateToCalendar() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PageCalendrier( // Corrected: PageCalendrier
+        builder: (context) => PageCalendrier(
+          // Corrected: PageCalendrier
           trelloService: trelloService,
           idTableau: widget.boardId,
         ),
@@ -285,7 +294,9 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+                    return Center(
+                        child: Text('Error: ${snapshot.error}',
+                            style: const TextStyle(color: Colors.red)));
                   } else if (snapshot.hasData) {
                     final lists = snapshot.data!;
                     return ListView.builder(
@@ -296,15 +307,20 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                           future: trelloService.getCards(list['id']),
                           builder: (context, cardSnapshot) {
                             List<Widget> cardWidgets = [];
-                            if (cardSnapshot.connectionState == ConnectionState.waiting) {
+                            if (cardSnapshot.connectionState ==
+                                ConnectionState.waiting) {
                               cardWidgets = [const CircularProgressIndicator()];
                             } else if (cardSnapshot.hasError) {
-                              cardWidgets = [Text('Error: ${cardSnapshot.error}')];
+                              cardWidgets = [
+                                Text('Error: ${cardSnapshot.error}')
+                              ];
                             } else if (cardSnapshot.hasData) {
                               final cards = cardSnapshot.data;
                               if (cards != null && cards.isNotEmpty) {
                                 cardWidgets = cards.map((card) {
-                                  final isClosed = _cardCompletionStatus[card['id']] ?? false;
+                                  final isClosed =
+                                      _cardCompletionStatus[card['id']] ??
+                                          false;
                                   return ListTile(
                                     onTap: () {
                                       showDialog(
@@ -313,23 +329,32 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                                         builder: (context) => CardDetailsModal(
                                           card: card,
                                           trelloService: trelloService,
-                                          listId: list['id'], // Pass the listId here
-                                          boardId: widget.boardId, // Pass the boardId here
+                                          listId: list[
+                                              'id'], // Pass the listId here
+                                          boardId: widget
+                                              .boardId, // Pass the boardId here
                                         ),
                                       );
                                     },
                                     title: Text(
-                                      card['name'] ?? "No name", // Add null check here
+                                      card['name'] ??
+                                          "No name", // Add null check here
                                       style: TextStyle(
-                                        decoration: isClosed ? TextDecoration.lineThrough : TextDecoration.none,
-                                        color: isClosed ? Colors.grey : Colors.black,
+                                        decoration: isClosed
+                                            ? TextDecoration.lineThrough
+                                            : TextDecoration.none,
+                                        color: isClosed
+                                            ? Colors.grey
+                                            : Colors.black,
                                       ),
                                     ),
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
-                                          icon: Icon(isClosed ? Icons.check_box : Icons.check_box_outline_blank),
+                                          icon: Icon(isClosed
+                                              ? Icons.check_box
+                                              : Icons.check_box_outline_blank),
                                           onPressed: () {
                                             _toggleCardCompletion(card['id']);
                                           },
@@ -338,7 +363,8 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                                           icon: const Icon(Icons.edit),
                                           color: Colors.blue[700],
                                           onPressed: () {
-                                            _showUpdateCardDialog(card['id'], card['name']);
+                                            _showUpdateCardDialog(
+                                                card['id'], card['name']);
                                           },
                                         ),
                                         IconButton(
@@ -365,13 +391,16 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                               ),
                               elevation: 4,
                               child: ExpansionTile(
-                                title: Text(list['name'] ?? "No name"), // Add null check here
+                                title: Text(list['name'] ??
+                                    "No name"), // Add null check here
                                 children: [
                                   Padding(
                                     padding: const EdgeInsets.all(8.0),
                                     child: Column(children: cardWidgets),
                                   ),
-                                  ElevatedButton(onPressed: () => _createCard(list['id']), child: const Text("Create new card")),
+                                  ElevatedButton(
+                                      onPressed: () => _createCard(list['id']),
+                                      child: const Text("Create new card")),
                                 ],
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -380,7 +409,8 @@ class _TrelloListScreenState extends State<TrelloListScreen> {
                                       icon: const Icon(Icons.edit),
                                       color: Colors.blue[700],
                                       onPressed: () {
-                                        _showUpdateListDialog(list['id'], list['name']);
+                                        _showUpdateListDialog(
+                                            list['id'], list['name']);
                                       },
                                     ),
                                     IconButton(

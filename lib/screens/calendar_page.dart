@@ -3,14 +3,15 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
-import 'trello_service.dart';
-import 'dart:isolate';
+import '../features/trello_service.dart';
 
 class PageCalendrier extends StatefulWidget {
   final TrelloService trelloService;
   final String idTableau;
 
-  const PageCalendrier({Key? key, required this.trelloService, required this.idTableau}) : super(key: key);
+  const PageCalendrier(
+      {Key? key, required this.trelloService, required this.idTableau})
+      : super(key: key);
 
   @override
   _PageCalendrierState createState() => _PageCalendrierState();
@@ -21,12 +22,13 @@ class _PageCalendrierState extends State<PageCalendrier> {
   DateTime? _jourCourant;
   CalendarFormat _formatCalendrier = CalendarFormat.month;
   Map<DateTime, List<EvenementCalendrier>> _evenements = {};
-  List<EvenementCalendrier> _allEvents = []; // Store all events
-  bool _isLoading = false;
-  final FlutterLocalNotificationsPlugin _pluginNotificationsLocales = FlutterLocalNotificationsPlugin();
-  final String _idCanal = 'canal_evenement_calendrier';
-  final String _nomCanal = 'Rappels d\'événements du calendrier';
-  final String _descriptionCanal = 'Rappels pour les événements du calendrier';
+  final FlutterLocalNotificationsPlugin _pluginNotificationsLocales =
+      FlutterLocalNotificationsPlugin();
+  final String _idCanal = 'canal_evenement_calendrier'; // ID unique du canal
+  final String _nomCanal =
+      'Rappels d\'événements du calendrier'; // Nom du canal
+  final String _descriptionCanal =
+      'Rappels pour les événements du calendrier'; // Description du canal
 
   @override
   void initState() {
@@ -43,12 +45,15 @@ class _PageCalendrierState extends State<PageCalendrier> {
 
   Future<void> _initialiserNotifications() async {
     const AndroidInitializationSettings parametresInitialisationAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    final InitializationSettings parametresInitialisation = InitializationSettings(
+        AndroidInitializationSettings(
+            '@mipmap/ic_launcher'); // Utilisez l'icône de votre application
+    final InitializationSettings parametresInitialisation =
+        InitializationSettings(
       android: parametresInitialisationAndroid,
     );
     await _pluginNotificationsLocales.initialize(parametresInitialisation,
         onDidReceiveNotificationResponse: _onReceptionReponseNotification);
+    // Créer le canal de notification
     await _creerCanalNotification();
   }
 
@@ -61,37 +66,45 @@ class _PageCalendrierState extends State<PageCalendrier> {
         importance: Importance.max,
       );
       await _pluginNotificationsLocales
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(canal);
     }
   }
 
-  void _onReceptionReponseNotification(NotificationResponse notificationResponse) async {
+  void _onReceptionReponseNotification(
+      NotificationResponse notificationResponse) async {
+    // Gérer la réponse à la notification ici
     print('Réponse à la notification : ${notificationResponse.payload}');
   }
 
   Future<void> _programmerNotification(EvenementCalendrier evenement) async {
     if (evenement.tempsRappel != null) {
-      final DateTime dateRappel = evenement.dateDebut.subtract(Duration(minutes: evenement.tempsRappel!));
+      final DateTime dateRappel = evenement.dateDebut
+          .subtract(Duration(minutes: evenement.tempsRappel!));
       if (dateRappel.isAfter(DateTime.now())) {
-        print('Programmation de la notification pour : ${evenement.titre} à ${dateRappel}');
-        final AndroidNotificationDetails detailsNotificationAndroid = AndroidNotificationDetails(
-          _idCanal,
+        print(
+            'Programmation de la notification pour : ${evenement.titre} à ${dateRappel}');
+        final AndroidNotificationDetails detailsNotificationAndroid =
+            AndroidNotificationDetails(
+          _idCanal, // Utiliser l'ID du canal
           _nomCanal,
           channelDescription: _descriptionCanal,
           importance: Importance.max,
           priority: Priority.high,
           ticker: 'ticker',
         );
-        final NotificationDetails detailsNotification = NotificationDetails(android: detailsNotificationAndroid);
+        final NotificationDetails detailsNotification =
+            NotificationDetails(android: detailsNotificationAndroid);
         await _pluginNotificationsLocales.zonedSchedule(
-          evenement.hashCode,
+          evenement.hashCode, // Utiliser un ID unique pour chaque événement
           'Rappel : ${evenement.titre}',
           evenement.description,
           tz.TZDateTime.from(dateRappel, tz.local),
           detailsNotification,
           androidAllowWhileIdle: true,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
         );
         print('Notification programmée avec succès !');
       } else {
@@ -103,44 +116,12 @@ class _PageCalendrierState extends State<PageCalendrier> {
   }
 
   Future<void> _chargerEvenementsTrello() async {
-    setState(() {
-      _isLoading = true;
-    });
     try {
-      final receivePort = ReceivePort();
-      await Isolate.spawn(_fetchAndProcessTrelloData, [widget.trelloService, widget.idTableau, receivePort.sendPort]);
-
-      final result = await receivePort.first;
-      if (result is Map<DateTime, List<EvenementCalendrier>>) {
-        setState(() {
-          _evenements = result;
-          _allEvents = result.values.expand((element) => element).toList();
-        });
-        for (var event in _allEvents) {
-          _programmerNotification(event);
-        }
-      } else {
-        print("Error processing Trello data: $result");
-      }
-    } catch (e) {
-      print("Error loading Trello events: $e");
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  static Future<void> _fetchAndProcessTrelloData(List<dynamic> args) async {
-    final TrelloService trelloService = args[0];
-    final String idTableau = args[1];
-    final SendPort sendPort = args[2];
-
-    try {
-      List<dynamic> listes = await trelloService.getLists(idTableau);
+      List<dynamic> listes =
+          await widget.trelloService.getLists(widget.idTableau);
       Map<DateTime, List<EvenementCalendrier>> nouveauxEvenements = {};
       for (var liste in listes) {
-        List<dynamic> cartes = await trelloService.getCards(liste['id']);
+        List<dynamic> cartes = await widget.trelloService.getCards(liste['id']);
         for (var carte in cartes) {
           DateTime? dateDebut;
           DateTime? dateFin;
@@ -161,8 +142,10 @@ class _PageCalendrierState extends State<PageCalendrier> {
           }
 
           if (dateDebut != null && dateFin != null) {
-            DateTime dateDebutFormatee = DateTime(dateDebut.year, dateDebut.month, dateDebut.day);
-            DateTime dateFinFormatee = DateTime(dateFin.year, dateFin.month, dateFin.day);
+            DateTime dateDebutFormatee =
+                DateTime(dateDebut.year, dateDebut.month, dateDebut.day);
+            DateTime dateFinFormatee =
+                DateTime(dateFin.year, dateFin.month, dateFin.day);
             EvenementCalendrier nouvelEvenement = EvenementCalendrier(
               titre: carte['name'],
               dateDebut: dateDebutFormatee,
@@ -170,18 +153,23 @@ class _PageCalendrierState extends State<PageCalendrier> {
               tempsRappel: tempsRappel,
               description: description,
             );
-            for (DateTime jour = dateDebutFormatee; jour.isBefore(dateFinFormatee.add(const Duration(days: 1))); jour = jour.add(const Duration(days: 1))) {
+            for (DateTime jour = dateDebutFormatee;
+                jour.isBefore(dateFinFormatee.add(const Duration(days: 1)));
+                jour = jour.add(const Duration(days: 1))) {
               if (nouveauxEvenements[jour] == null) {
                 nouveauxEvenements[jour] = [];
               }
               nouveauxEvenements[jour]!.add(nouvelEvenement);
             }
+            _programmerNotification(nouvelEvenement);
           }
         }
       }
-      sendPort.send(nouveauxEvenements);
+      setState(() {
+        _evenements = nouveauxEvenements;
+      });
     } catch (e) {
-      sendPort.send("Error: $e");
+      print("Erreur lors du chargement des événements Trello : $e");
     }
   }
 
@@ -206,7 +194,8 @@ class _PageCalendrierState extends State<PageCalendrier> {
                   onChanged: (value) => titre = value,
                 ),
                 ListTile(
-                  title: Text('Date de début : ${dateDebut.toLocal().toString().split(' ')[0]}'),
+                  title: Text(
+                      'Date de début : ${dateDebut.toLocal().toString().split(' ')[0]}'),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
                     final DateTime? selection = await showDatePicker(
@@ -223,7 +212,8 @@ class _PageCalendrierState extends State<PageCalendrier> {
                   },
                 ),
                 ListTile(
-                  title: Text('Date de fin : ${dateFin.toLocal().toString().split(' ')[0]}'),
+                  title: Text(
+                      'Date de fin : ${dateFin.toLocal().toString().split(' ')[0]}'),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
                     final DateTime? selection = await showDatePicker(
@@ -240,7 +230,8 @@ class _PageCalendrierState extends State<PageCalendrier> {
                   },
                 ),
                 TextField(
-                  decoration: const InputDecoration(hintText: 'Temps de rappel (minutes avant)'),
+                  decoration: const InputDecoration(
+                      hintText: 'Temps de rappel (minutes avant)'),
                   keyboardType: TextInputType.number,
                   onChanged: (value) => tempsRappel = int.tryParse(value),
                 ),
@@ -269,13 +260,16 @@ class _PageCalendrierState extends State<PageCalendrier> {
                     tempsRappel: tempsRappel,
                     description: description,
                   );
-                  await widget.trelloService.createCardWithDetails(widget.idTableau, titre, dateDebut, dateFin, tempsRappel, description);
+                  await widget.trelloService.createCardWithDetails(
+                      widget.idTableau,
+                      titre,
+                      dateDebut,
+                      dateFin,
+                      tempsRappel,
+                      description);
                   _programmerNotification(nouvelEvenement);
                   setState(() {
-                    if (_evenements[dateDebut] == null) {
-                      _evenements[dateDebut] = [];
-                    }
-                    _evenements[dateDebut]!.add(nouvelEvenement);
+                    _chargerEvenementsTrello();
                   });
                   if (context.mounted) Navigator.of(context).pop();
                 }
@@ -293,98 +287,97 @@ class _PageCalendrierState extends State<PageCalendrier> {
       appBar: AppBar(
         title: const Text('Calendrier'),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                TableCalendar(
-                  firstDay: DateTime.utc(2010, 10, 16),
-                  lastDay: DateTime.utc(2030, 3, 14),
-                  focusedDay: _jourSelectionne,
-                  calendarFormat: _formatCalendrier,
-                  selectedDayPredicate: (jour) {
-                    return isSameDay(_jourCourant, jour);
-                  },
-                  onDaySelected: (jourSelectionne, jourCourant) {
-                    if (!isSameDay(_jourCourant, jourSelectionne)) {
-                      setState(() {
-                        _jourCourant = jourSelectionne;
-                        _jourSelectionne = jourCourant;
-                      });
-                    }
-                  },
-                  onFormatChanged: (format) {
-                    if (_formatCalendrier != format) {
-                      setState(() {
-                        _formatCalendrier = format;
-                      });
-                    }
-                  },
-                  onPageChanged: (jourSelectionne) {
-                    _jourSelectionne = jourSelectionne;
-                  },
-                  eventLoader: (jour) {
-                    return _evenements[jour] ?? [];
-                  },
-                  calendarBuilders: CalendarBuilders(
-                    selectedBuilder: (context, date, _) {
-                      return Container(
-                        margin: const EdgeInsets.all(4.0),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor,
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                        child: Text(
-                          date.day.toString(),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      );
-                    },
-                    todayBuilder: (context, date, _) {
-                      return Container(
-                        margin: const EdgeInsets.all(4.0),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                        child: Text(
-                          date.day.toString(),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      );
-                    },
-                    markerBuilder: (context, date, evenements) {
-                      if (evenements.isNotEmpty) {
-                        return Positioned(
-                          right: 1,
-                          bottom: 1,
-                          child: _construireMarqueurEvenements(date, evenements),
-                        );
-                      }
-                      return null;
-                    },
+      body: Column(
+        children: [
+          TableCalendar(
+            firstDay: DateTime.utc(2010, 10, 16),
+            lastDay: DateTime.utc(2030, 3, 14),
+            focusedDay: _jourSelectionne,
+            calendarFormat: _formatCalendrier,
+            selectedDayPredicate: (jour) {
+              return isSameDay(_jourCourant, jour);
+            },
+            onDaySelected: (jourSelectionne, jourCourant) {
+              if (!isSameDay(_jourCourant, jourSelectionne)) {
+                setState(() {
+                  _jourCourant = jourSelectionne;
+                  _jourSelectionne = jourCourant;
+                });
+              }
+            },
+            onFormatChanged: (format) {
+              if (_formatCalendrier != format) {
+                setState(() {
+                  _formatCalendrier = format;
+                });
+              }
+            },
+            onPageChanged: (jourSelectionne) {
+              _jourSelectionne = jourSelectionne;
+            },
+            eventLoader: (jour) {
+              return _evenements[jour] ?? [];
+            },
+            calendarBuilders: CalendarBuilders(
+              selectedBuilder: (context, date, _) {
+                return Container(
+                  margin: const EdgeInsets.all(4.0),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(10.0),
                   ),
-                ),
-                const SizedBox(height: 20),
-                if (_jourCourant != null)
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: _evenements[_jourCourant]?.length ?? 0,
-                      itemBuilder: (context, index) {
-                        final evenement = _evenements[_jourCourant]![index];
-                        return ListTile(
-                          title: Text(evenement.titre),
-                          subtitle: Text(evenement.description),
-                        );
-                      },
-                    ),
+                  child: Text(
+                    date.day.toString(),
+                    style: const TextStyle(color: Colors.white),
                   ),
-              ],
+                );
+              },
+              todayBuilder: (context, date, _) {
+                return Container(
+                  margin: const EdgeInsets.all(4.0),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  child: Text(
+                    date.day.toString(),
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              },
+              markerBuilder: (context, date, evenements) {
+                if (evenements.isNotEmpty) {
+                  return Positioned(
+                    right: 1,
+                    bottom: 1,
+                    child: _construireMarqueurEvenements(date, evenements),
+                  );
+                }
+                return null;
+              },
             ),
+          ),
+          const SizedBox(height: 20),
+          if (_jourCourant != null)
+            Expanded(
+              child: ListView.builder(
+                itemCount: _evenements[_jourCourant]?.length ?? 0,
+                itemBuilder: (context, index) {
+                  final evenement = _evenements[_jourCourant]![index];
+                  return ListTile(
+                    title: Text(evenement.titre),
+                    subtitle: Text(evenement.description),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _afficherDialogueAjoutEvenement(_jourCourant ?? DateTime.now()),
+        onPressed: () =>
+            _afficherDialogueAjoutEvenement(_jourCourant ?? DateTime.now()),
         child: const Icon(Icons.add),
       ),
     );
