@@ -1,171 +1,156 @@
+// lib/auth/login.dart
+
+import 'dart:async';
 import 'package:flutter/material.dart';
-import '../screens/homepage.dart';
-import 'auth_service.dart';
-import 'package:provider/provider.dart';
-import '../models/pigeon_user_details.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_application_test/pigeon_api.dart';
 
-class Login extends StatefulWidget {
-  const Login({super.key});
+// Le State reste associé au StatefulWidget
+class _LoginState extends State<LoginScreen> { // <--- MODIFIÉ ICI
+  // ... (le reste du code de _LoginState reste identique) ...
+   final TextEditingController _emailController = TextEditingController();
+   final TextEditingController _passwordController = TextEditingController();
+   bool _isLoading = false;
+   final HostApi _hostApi = HostApi();
 
-  @override
-  State<Login> createState() => _LoginState();
-}
-
-class _LoginState extends State<Login> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-
-  bool isLoading = false;
-  bool areFieldsFilled = false;
-
-  @override
-  void initState() {
-    super.initState();
-    emailController.addListener(updateFieldsStatus);
-    passwordController.addListener(updateFieldsStatus);
-  }
-
-  @override
-  void dispose() {
-    emailController.removeListener(updateFieldsStatus);
-    passwordController.removeListener(updateFieldsStatus);
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
-  }
-
-  void updateFieldsStatus() {
-    setState(() {
-      areFieldsFilled =
-          emailController.text.isNotEmpty && passwordController.text.isNotEmpty;
-    });
-  }
-
-  Future<void> signIn() async {
-    debugPrint("=== DÉBUT SIGNIN ===");
-    String email = emailController.text.trim();
-    String password = passwordController.text.trim();
-
-    debugPrint(
-        "Email: $email, Password: ${password.isNotEmpty ? "****" : "(vide)"}");
-
-    setState(() => isLoading = true);
-
-    try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      PigeonUserDetails? userDetails = await authService
-          .signInWithEmailAndPassword(email, password);
-
-      if (userDetails != null && mounted) {
-        debugPrint("=== USER CONNECTÉ ===");
-        debugPrint("User UID: ${userDetails.uid}");
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const Homepage()),
-        );
-      }
-    } on FirebaseAuthException catch (e) {
-      debugPrint("=== ERREUR FIREBASE === Code: ${e.code}");
-      _showError(_getFirebaseErrorMessage(e.code));
-    } catch (e) {
-      debugPrint("=== ERREUR SIGNIN === $e");
-      _showError("Erreur lors de la connexion.");
-    } finally {
-      if (mounted) {
-        debugPrint("=== FIN SIGNIN ===");
-        setState(() => isLoading = false);
-      }
+    @override
+    void dispose() {
+      _emailController.dispose();
+      _passwordController.dispose();
+      super.dispose();
     }
-  }
 
-  Future<void> signInAnonymously() async {
-    debugPrint("=== SIGNIN ANONYME ===");
-    setState(() => isLoading = true);
-    final authService = Provider.of<AuthService>(context, listen: false);
-
-    try {
-      PigeonUserDetails? userDetails = await authService.signInAnonymously();
-      if (userDetails != null && mounted) {
-        debugPrint("=== USER ANONYME CONNECTÉ: ${userDetails.uid} ===");
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const Homepage()),
+    void _showError(String message) {
+      print('=== AFFICHAGE ERREUR: $message ===');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
         );
       } else {
-        debugPrint("=== ERREUR SIGNIN ANONYME: userDetails is null ===");
-        _showError("Erreur lors de la connexion anonyme.");
+        print("!!! Widget unmounted, cannot show SnackBar for error: $message");
       }
-    } catch (e) {
-      debugPrint("=== ERREUR SIGNIN ANONYME: $e ===");
-      _showError("Erreur lors de la connexion anonyme.");
-    } finally {
-      if (mounted) setState(() => isLoading = false);
     }
-  }
 
-  void _showError(String message) {
-    debugPrint("=== AFFICHAGE ERREUR: $message ===");
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
-  }
+    Future<void> signIn() async {
+      final String email = _emailController.text.trim();
+      final String password = _passwordController.text.trim();
 
-  String _getFirebaseErrorMessage(String code) {
-    switch (code) {
-      case 'user-not-found':
-        return "Aucun utilisateur trouvé avec cet email.";
-      case 'wrong-password':
-        return "Mot de passe incorrect.";
-      case 'invalid-email':
-        return "Email invalide.";
-      case 'network-request-failed':
-        return "Problème de connexion Internet.";
-      case 'too-many-requests':
-        return "Trop de tentatives. Réessayez plus tard.";
-      default:
-        return "Erreur de connexion. Vérifiez vos identifiants.";
+      if (email.isEmpty || password.isEmpty) {
+        _showError('Veuillez entrer l\'email et le mot de passe.');
+        return;
+      }
+
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+        });
+      }
+
+      print('=== DÉBUT SIGNIN ===');
+
+      try {
+        final dynamic result = await _hostApi.signInWithEmailAndPassword(email, password);
+        print('>>> Pigeon Result Type: ${result.runtimeType}');
+        print('>>> Pigeon Result Value: $result');
+        PigeonUserDetails? userDetails;
+
+        if (result is PigeonUserDetails) {
+          userDetails = result;
+          print('>>> Direct UserDetails received.');
+        }
+        else if (result is List) {
+          if (result.isNotEmpty && result[0] != null) {
+            try {
+              userDetails = PigeonUserDetails.decode(result[0]!);
+              print('>>> Decoded UserDetails from List[0].');
+            } catch (decodeError, stackTrace) {
+              print('>>> Error decoding result[0]: $decodeError');
+              print('>>> Decode StackTrace: $stackTrace');
+              _showError('Erreur interne lors du traitement de la réponse.');
+            }
+          } else {
+            print('>>> Pigeon result List was empty or first element was null.');
+            _showError('Erreur lors de la connexion: réponse invalide reçue.');
+          }
+        }
+        else if (result == null) {
+           print('>>> Pigeon returned null.');
+           _showError('Email ou mot de passe incorrect.');
+        }
+        else {
+          print('>>> Unexpected Pigeon result format: ${result.runtimeType}');
+          _showError('Erreur lors de la connexion: format de réponse inattendu.');
+        }
+
+        if (userDetails != null) {
+           print('>>> Connexion réussie! UID: ${userDetails.uid}, Email: ${userDetails.email}');
+        }
+
+      } on PlatformException catch (e, s) {
+        print('>>> PlatformException during signIn call: ${e.code} - ${e.message}');
+        print('>>> Stacktrace: $s');
+        String errorMessage = e.message ?? 'Une erreur de plateforme est survenue.';
+        if (e.code == 'firebase_auth/invalid-credential' || e.code.contains('ERROR_WRONG_PASSWORD') || e.code.contains('ERROR_USER_NOT_FOUND')) {
+           errorMessage = 'Email ou mot de passe incorrect.';
+        } else if (e.code.contains('network-error')) {
+           errorMessage = 'Erreur réseau. Vérifiez votre connexion.';
+        }
+        _showError(errorMessage);
+
+      } catch (e, s) {
+        print('>>> Generic error during signIn call: $e');
+        print('>>> Stacktrace: $s');
+        _showError('Une erreur inattendue est survenue: $e');
+
+      } finally {
+        if (mounted) {
+           setState(() {
+             _isLoading = false;
+           });
+        }
+        print('=== FIN SIGNIN ===');
+      }
     }
-  }
+
+    @override
+    Widget build(BuildContext context) {
+      print('=== BUILD LOGIN ===');
+      return Scaffold(
+        appBar: AppBar(title: const Text('Connexion')),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _passwordController,
+                decoration: const InputDecoration(labelText: 'Mot de passe'),
+                obscureText: true,
+              ),
+              const SizedBox(height: 20),
+              _isLoading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                      onPressed: signIn,
+                      child: const Text('Se connecter'),
+                    ),
+            ],
+          ),
+        ),
+      );
+    }
+}
+
+// Le StatefulWidget utilise maintenant le nom correct
+class LoginScreen extends StatefulWidget { // <--- MODIFIÉ ICI
+  const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    debugPrint("=== BUILD LOGIN ===");
-    return Scaffold(
-      appBar: AppBar(title: const Text("Connexion")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: "Email"),
-            ),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: "Mot de passe"),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            isLoading
-                ? const CircularProgressIndicator()
-                : Column(
-                    children: [
-                      ElevatedButton(
-                        onPressed: areFieldsFilled ? signIn : null,
-                        style: ElevatedButton.styleFrom(
-                          disabledBackgroundColor: Colors.grey,
-                        ),
-                        child: const Text("Se connecter"),
-                      ),
-                      ElevatedButton(
-                        onPressed: signInAnonymously,
-                        child: const Text("Connexion anonyme"),
-                      ),
-                    ],
-                  ),
-          ],
-        ),
-      ),
-    );
-  }
+  State<LoginScreen> createState() => _LoginState(); // <--- MODIFIÉ ICI
 }

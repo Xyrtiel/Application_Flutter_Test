@@ -1,7 +1,8 @@
+// lib/screens/homepage.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../features/trello_service.dart';
-import '../auth/login.dart';
+import '../auth/login.dart'; // Cet import est correct si login.dart contient LoginScreen
 import '../screens/trello_list_screen.dart';
 import 'package:provider/provider.dart';
 import '../config/theme_provider.dart';
@@ -14,129 +15,128 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
-  final User? user = FirebaseAuth.instance.currentUser;
-  final TrelloService trelloService = TrelloService();
-  late Future<List<dynamic>> boardsFuture;
-  final TextEditingController _boardNameController = TextEditingController();
+  // ... (le reste du code de _HomepageState reste identique) ...
+   final User? user = FirebaseAuth.instance.currentUser;
+   final TrelloService trelloService = TrelloService();
+   late Future<List<dynamic>> boardsFuture;
+   final TextEditingController _boardNameController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchBoards();
-  }
-
-  @override
-  void dispose() {
-    _boardNameController.dispose();
-    super.dispose();
-  }
-
-  void _fetchBoards() {
-    setState(() {
-      boardsFuture = trelloService.getBoards();
-    });
-  }
-
-  Future<void> _createBoard() async {
-    // Show a dialog to get the board name
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Create new board"),
-          content: TextField(
-            controller: _boardNameController,
-            decoration: const InputDecoration(hintText: "Enter board name"),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text("Cancel"),
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-                _boardNameController.clear(); // Clear the text field
-              },
-            ),
-            TextButton(
-              child: const Text("Create"),
-              onPressed: () async {
-                final boardName = _boardNameController.text.trim();
-                if (boardName.isNotEmpty) {
-                  await trelloService.createBoard(boardName, null);
-                  _fetchBoards(); // Refresh the list
-                  _boardNameController.clear(); // Clear the text field
-                  if (context.mounted)
-                    Navigator.of(context).pop(); // Close the dialog
-                } else {
-                  if (context.mounted) Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Board name cannot be empty.'),
-                  ));
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _deleteBoard(String boardId) async {
-    try {
-      await trelloService.deleteBoard(boardId);
+    @override
+    void initState() {
+      super.initState();
       _fetchBoards();
-    } catch (e) {
-      print("Error deleting board: $e");
     }
-  }
 
-  Future<void> _showUpdateBoardDialog(
-      String boardId, String currentName) async {
-    _boardNameController.text = currentName;
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Update board name"),
-          content: TextField(
-            controller: _boardNameController,
-            decoration: const InputDecoration(hintText: "Enter new board name"),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text("Cancel"),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _boardNameController.clear(); // Clear the text field
-              },
+    @override
+    void dispose() {
+      _boardNameController.dispose();
+      super.dispose();
+    }
+
+    void _fetchBoards() {
+      setState(() {
+        boardsFuture = trelloService.getBoards();
+      });
+    }
+
+    Future<void> _createBoard() async {
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Create new board"),
+            content: TextField(
+              controller: _boardNameController,
+              decoration: const InputDecoration(hintText: "Enter board name"),
             ),
-            TextButton(
-              child: const Text("Update"),
-              onPressed: () async {
-                final boardName = _boardNameController.text.trim();
-                if (boardName.isNotEmpty) {
-                  await trelloService.updateBoard(boardId, boardName);
-                  _fetchBoards(); // Refresh the list after update
-                  _boardNameController.clear(); // Clear the text field
-                  if (context.mounted) Navigator.of(context).pop();
-                } else {
-                  if (context.mounted) Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Board name cannot be empty.'),
-                  ));
-                }
-              },
+            actions: <Widget>[
+              TextButton(
+                child: const Text("Cancel"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _boardNameController.clear();
+                },
+              ),
+              TextButton(
+                child: const Text("Create"),
+                onPressed: () async {
+                  final boardName = _boardNameController.text.trim();
+                  if (boardName.isNotEmpty) {
+                    await trelloService.createBoard(boardName, null);
+                    _fetchBoards();
+                    _boardNameController.clear();
+                    if (context.mounted) Navigator.of(context).pop();
+                  } else {
+                    if (context.mounted) Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Board name cannot be empty.'),
+                    ));
+                  }
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+
+    Future<void> _deleteBoard(String boardId) async {
+      try {
+        await trelloService.deleteBoard(boardId);
+        _fetchBoards();
+      } catch (e) {
+        print("Error deleting board: $e");
+      }
+    }
+
+    Future<void> _showUpdateBoardDialog(
+        String boardId, String currentName) async {
+      _boardNameController.text = currentName;
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Update board name"),
+            content: TextField(
+              controller: _boardNameController,
+              decoration: const InputDecoration(hintText: "Enter new board name"),
             ),
-          ],
-        );
-      },
-    );
-  }
+            actions: <Widget>[
+              TextButton(
+                child: const Text("Cancel"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _boardNameController.clear();
+                },
+              ),
+              TextButton(
+                child: const Text("Update"),
+                onPressed: () async {
+                  final boardName = _boardNameController.text.trim();
+                  if (boardName.isNotEmpty) {
+                    await trelloService.updateBoard(boardId, boardName);
+                    _fetchBoards();
+                    _boardNameController.clear();
+                    if (context.mounted) Navigator.of(context).pop();
+                  } else {
+                    if (context.mounted) Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Board name cannot be empty.'),
+                    ));
+                  }
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
 
   Future<void> signOut() async {
     await FirebaseAuth.instance.signOut();
     if (mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const Login()),
+        MaterialPageRoute(builder: (context) => const LoginScreen()), // <--- MODIFIÉ ICI
       );
     }
   }
