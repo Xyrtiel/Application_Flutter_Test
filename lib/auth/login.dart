@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../screens/homepage.dart';
 import 'auth_service.dart';
+import 'package:provider/provider.dart';
+import '../models/pigeon_user_details.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -13,7 +15,6 @@ class Login extends StatefulWidget {
 class _LoginState extends State<Login> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final AuthService authService = AuthService();
 
   bool isLoading = false;
   bool areFieldsFilled = false;
@@ -52,13 +53,13 @@ class _LoginState extends State<Login> {
     setState(() => isLoading = true);
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(email: email, password: password);
+      final authService = Provider.of<AuthService>(context, listen: false);
+      PigeonUserDetails? userDetails = await authService
+          .signInWithEmailAndPassword(email, password);
 
-      debugPrint("=== USER CONNECTÉ ===");
-      debugPrint("User UID: ${userCredential.user?.uid}");
-
-      if (mounted) {
+      if (userDetails != null && mounted) {
+        debugPrint("=== USER CONNECTÉ ===");
+        debugPrint("User UID: ${userDetails.uid}");
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const Homepage()),
         );
@@ -66,6 +67,9 @@ class _LoginState extends State<Login> {
     } on FirebaseAuthException catch (e) {
       debugPrint("=== ERREUR FIREBASE === Code: ${e.code}");
       _showError(_getFirebaseErrorMessage(e.code));
+    } catch (e) {
+      debugPrint("=== ERREUR SIGNIN === $e");
+      _showError("Erreur lors de la connexion.");
     } finally {
       if (mounted) {
         debugPrint("=== FIN SIGNIN ===");
@@ -77,17 +81,21 @@ class _LoginState extends State<Login> {
   Future<void> signInAnonymously() async {
     debugPrint("=== SIGNIN ANONYME ===");
     setState(() => isLoading = true);
+    final authService = Provider.of<AuthService>(context, listen: false);
 
     try {
-      User? user = await authService.signInAnonymously();
-      if (user != null && mounted) {
-        debugPrint("=== USER ANONYME CONNECTÉ: ${user.uid} ===");
+      PigeonUserDetails? userDetails = await authService.signInAnonymously();
+      if (userDetails != null && mounted) {
+        debugPrint("=== USER ANONYME CONNECTÉ: ${userDetails.uid} ===");
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const Homepage()),
         );
+      } else {
+        debugPrint("=== ERREUR SIGNIN ANONYME: userDetails is null ===");
+        _showError("Erreur lors de la connexion anonyme.");
       }
     } catch (e) {
-      debugPrint("=== ERREUR SIGNIN ANONYME ===");
+      debugPrint("=== ERREUR SIGNIN ANONYME: $e ===");
       _showError("Erreur lors de la connexion anonyme.");
     } finally {
       if (mounted) setState(() => isLoading = false);
@@ -101,7 +109,6 @@ class _LoginState extends State<Login> {
     );
   }
 
-  /// Correction: Fonction `_getFirebaseErrorMessage` ajoutée
   String _getFirebaseErrorMessage(String code) {
     switch (code) {
       case 'user-not-found':
@@ -144,12 +151,9 @@ class _LoginState extends State<Login> {
                 : Column(
                     children: [
                       ElevatedButton(
-                        onPressed: areFieldsFilled
-                            ? signIn
-                            : null, // Disable button if fields are not filled
+                        onPressed: areFieldsFilled ? signIn : null,
                         style: ElevatedButton.styleFrom(
-                          disabledBackgroundColor:
-                              Colors.grey, // Style for disabled button
+                          disabledBackgroundColor: Colors.grey,
                         ),
                         child: const Text("Se connecter"),
                       ),
