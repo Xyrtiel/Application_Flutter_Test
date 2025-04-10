@@ -6,9 +6,11 @@ import '../auth/login.dart'; // Cet import est correct si login.dart contient Lo
 import '../screens/trello_list_screen.dart';
 import 'package:provider/provider.dart';
 import '../config/theme_provider.dart';
+import '../auth/auth_service.dart';
 
 class Homepage extends StatefulWidget {
-  const Homepage({Key? key}) : super(key: key);
+  final String? trelloMemberId;
+  const Homepage({Key? key, this.trelloMemberId}) : super(key: key);
 
   @override
   State<Homepage> createState() => _HomepageState();
@@ -20,6 +22,7 @@ class _HomepageState extends State<Homepage> {
    final TrelloService trelloService = TrelloService();
    late Future<List<dynamic>> boardsFuture;
    final TextEditingController _boardNameController = TextEditingController();
+   final AuthService _authService = AuthService();
 
     @override
     void initState() {
@@ -216,6 +219,21 @@ class _HomepageState extends State<Homepage> {
                                   icon: const Icon(Icons.delete),
                                   onPressed: () {
                                     _deleteBoard(board['id']);
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.add),
+                                  onPressed: () async {
+                                    if (widget.trelloMemberId != null) {
+                                      try {
+                                        await trelloService.addMemberToCard(board['id'], widget.trelloMemberId!);
+                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Membre ajouté à la carte")));
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Erreur lors de l'ajout du membre : $e")));
+                                      }
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Erreur : TrelloMemberId est null")));
+                                    }
                                   },
                                 ),
                                 const Icon(Icons.arrow_forward_ios),
