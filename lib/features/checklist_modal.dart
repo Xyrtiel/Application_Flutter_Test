@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'trello_service.dart'; // Assuming TrelloApiException is defined here
+import 'trello_service.dart';
 
 class ChecklistModal extends StatefulWidget {
   final String cardId; // This is the CARD ID

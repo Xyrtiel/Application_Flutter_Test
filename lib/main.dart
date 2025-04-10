@@ -1,53 +1,55 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
 
-import './config/firebase_options.dart';
-// import './screens/splash_screen.dart'; // SplashScreen n'est plus utilisé si Wrapper est home
-import './config/theme_provider.dart';
-import './auth/auth_service.dart';
-import './auth/wrapper.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
-// import './config/app_config.dart'; // Pas nécessaire pour charger les secrets via dotenv
+import 'config/firebase_options.dart';
+import 'auth/wrapper.dart';
+import 'auth/auth_service.dart';
+// *** AJOUTE L'IMPORT SI NÉCESSAIRE ***
+import 'config/theme_provider.dart'; // Assure-toi que ce chemin est correct
 
-// 2. Rendre la fonction main async
-Future<void> main() async {
-  // 3. Assurer l'initialisation des bindings Flutter
+void main() async {
+  // Assure que les bindings Flutter sont prêts avant les opérations async
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 4. Charger les variables d'environnement depuis le fichier .env
+  // Charge les variables d'environnement depuis .env
   try {
     await dotenv.load(fileName: ".env");
-    print(".env file loaded successfully."); // Confirmation
+    print(".env chargé avec succès."); // Message de confirmation
   } catch (e) {
-    // Gérer l'erreur si le fichier .env ne peut pas être chargé
-    print("ERREUR critique lors du chargement du fichier .env: $e");
-    // Vous pourriez vouloir arrêter l'application ici ou utiliser des valeurs par défaut
-    // si le chargement échoue, mais la classe Secrets lèvera une erreur plus tard
-    // si les clés spécifiques sont manquantes.
+    print("Erreur lors du chargement du fichier .env: $e");
   }
 
-  // Initialisation de Firebase (code existant)
+  // Initialise Firebase
   try {
     await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform);
-    print("Firebase Initialized");
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.playIntegrity,
-      appleProvider: AppleProvider.appAttest,
+      options: DefaultFirebaseOptions.currentPlatform,
     );
-     print("Firebase App Check activated.");
+    print("Firebase initialisé avec succès."); // Message de confirmation
+    // AppCheck n'est pas dans ce snippet, mais était dans ton code précédent. Ajoute-le si nécessaire.
+    // await FirebaseAppCheck.instance.activate(...)
   } catch (e) {
-    print("Firebase initialization/AppCheck error: $e");
+    print("Erreur lors de l'initialisation de Firebase: $e");
   }
 
-  // Lancement de l'application (code existant)
+  // Initialise les données de formatage pour la locale française
+  try {
+    await initializeDateFormatting('fr_FR', null);
+    print("Formatage de date pour 'fr_FR' initialisé."); // Message de confirmation
+  } catch (e) {
+     print("Erreur lors de l'initialisation du formatage de date: $e");
+  }
+
+  // Utilise MultiProvider si tu as plusieurs providers (comme ThemeProvider)
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         Provider<AuthService>(create: (_) => AuthService()),
+        // *** CORRECTION ICI : DÉCOMMENTE CETTE LIGNE ***
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: const MyApp(),
     ),
@@ -59,14 +61,23 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
+    // *** ASSURE-TOI QUE CE CODE UTILISE BIEN ThemeProvider MAINTENANT ***
+    // Si tu veux que ton thème change dynamiquement, utilise Consumer
+    return Consumer<ThemeProvider>( // Utilise Consumer pour écouter les changements de thème
       builder: (context, themeProvider, child) {
         return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          themeMode: themeProvider.themeMode,
-          theme: ThemeData.light(),
-          darkTheme: ThemeData.dark(),
+          title: 'Flutter Trello App',
+          themeMode: themeProvider.themeMode, // Applique le mode de thème
+          theme: ThemeData( // Thème clair
+             colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.light),
+             useMaterial3: true,
+          ),
+          darkTheme: ThemeData( // Thème sombre
+             colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.dark),
+             useMaterial3: true,
+          ),
           home: const Wrapper(),
+          debugShowCheckedModeBanner: false,
         );
       },
     );

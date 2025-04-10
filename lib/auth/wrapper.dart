@@ -2,7 +2,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../screens/homepage.dart';
-import 'login.dart'; // Cet import est correct si login.dart contient LoginScreen
+import 'login.dart'; 
 import 'package:provider/provider.dart';
 import 'auth_service.dart';
 
@@ -29,7 +29,7 @@ class _WrapperState extends State<Wrapper> {
           return const Homepage();
         } else {
           print("No user connected");
-          return const LoginScreen(); // <--- MODIFIÉ ICI
+          return const LoginScreen();
         }
       },
     );
