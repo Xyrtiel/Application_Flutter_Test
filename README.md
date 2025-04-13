@@ -1,4 +1,4 @@
-# 🚀 Flutter Trello Clone Project
+# 🚀 Flutter Trello Project
 
 [![Flutter Version](https://img.shields.io/badge/Flutter-%3E%3D3.x.x-blue)](https://flutter.dev)
 [![Dart Version](https://img.shields.io/badge/Dart-%3E%3D3.2.3-blue)](https://dart.dev)
