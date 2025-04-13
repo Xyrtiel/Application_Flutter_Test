@@ -22,8 +22,8 @@ L'application utilise Firebase pour l'authentification et potentiellement Firest
     *   ✅ Création, Lecture, Mise à jour, Suppression des **Lists** (Listes).
     *   ✅ Création, Lecture, Mise à jour, Suppression des **Cards** (Cartes).
 *   **Fonctionnalités Avancées Trello :**
-    *   ❓ Création de tableaux à partir de **Templates** (via API Trello `idBoardSource`). *(Vérifier l'implémentation complète)*
-    *   ❓ **Assignation** de membres Trello à des cartes (via API Trello `idMembers`). *(Vérifier l'implémentation complète)*
+    *   ❓ Création de tableaux à partir de **Templates** (via API Trello `idBoardSource`).
+    *   ❓ **Assignation** de membres Trello à des cartes (via API Trello `idMembers`).
 *   **UI/UX :**
     *   Respect des guidelines Material Design.
     *   Identité visuelle cohérente (thème clair/sombre, couleurs, typographie).
