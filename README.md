@@ -78,22 +78,22 @@ L'application utilise Firebase pour l'authentification et potentiellement Firest
 ### Configuration
 
 1.  **Firebase :**
-    *   Suis les instructions de Firebase pour ajouter Flutter à ton projet Firebase.
-    *   Télécharge les fichiers de configuration :
+    *   Suivez les instructions de Firebase pour ajouter Flutter à votre projet Firebase.
+    *   Téléchargez les fichiers de configuration :
         *   `google-services.json` pour Android (à placer dans `android/app/`)
         *   `GoogleService-Info.plist` pour iOS (à placer dans `ios/Runner/` via Xcode)
-    *   Assure-toi d'activer les méthodes d'authentification nécessaires (Email/Password, Anonyme) dans la console Firebase.
-    *   **Important :** Ajoute ces fichiers de configuration Firebase à ton `.gitignore` pour ne pas les versionner.
+    *   Assurez-vous d'activer les méthodes d'authentification nécessaires (Email/Password, Anonyme) dans la console Firebase.
+    *   **Important :** Ajoutez ces fichiers de configuration Firebase à votre `.gitignore` pour ne pas les versionner.
 
 2.  **API Trello & Secrets :**
-    *   Crée un fichier nommé `.env` à la racine du projet (`flutter_application_test/.env`).
-    *   Ajoute tes clés Trello dans ce fichier :
+    *   Créez un fichier nommé `.env` à la racine du projet (`flutter_application_test/.env`).
+    *   Ajoutez vos clés Trello dans ce fichier :
         ```dotenv
         TRELLO_API_KEY=VOTRE_CLE_API_TRELLO
         TRELLO_TOKEN=VOTRE_TOKEN_TRELLO
         ```
         *(Comment obtenir une clé API et un token Trello : Trello Developer Docs)*
-    *   **Important :** Assure-toi que le fichier `.env` est bien listé dans ton `.gitignore` pour ne pas exposer tes secrets.
+    *   **Important :** Assurez-vous que le fichier `.env` est bien listé dans votre `.gitignore` pour ne pas exposer vos secrets.
 
 ### Lancer l'application
 
